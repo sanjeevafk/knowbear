@@ -16,21 +16,16 @@ async def test_generate_stream_explanation_regenerate_appends_quote(monkeypatch)
         async def route_inference_stream(self, _prompt, **_kwargs):
             yield "hello"
 
-    async def fake_quote():
+    def fake_quote():
         return "---\n*\"Quote\"*"
 
-    async def fake_search_context(_topic, **_kwargs):
-        return ""
-
     monkeypatch.setattr(model_provider.ModelProvider, "get_instance", classmethod(lambda cls: DummyProvider()))
-    monkeypatch.setattr(inference_module.search_service, "get_search_context", fake_search_context)
-    monkeypatch.setattr(inference_module.search_service, "get_regeneration_quote", fake_quote)
+    monkeypatch.setattr(inference_module, "get_regeneration_quote", fake_quote)
 
     chunks = []
     async for chunk in inference_module.generate_stream_explanation(
         "topic",
         "eli5",
-        mode="fast",
         regenerate=True
     ):
         chunks.append(chunk)

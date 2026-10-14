@@ -33,9 +33,6 @@ def test_settings():
         gemini_api_key="",
         token_rate_limit_enabled=True,
         token_rate_limit_per_ip_hour=12000,
-        tavily_api_key="",
-        serper_api_key="",
-        exa_api_key="",
     )
 
 
