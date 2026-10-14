@@ -9,7 +9,6 @@ async def ensemble_generate(
     topic: str,
     level: str,
     mode: str | None = None,
-    retrieval: str | None = None,
     client_ip: str = "unknown",
 ) -> str:
     """Generate explanation directly using standard GPT-OSS 20B model."""
@@ -19,7 +18,6 @@ async def ensemble_generate(
             level,
             FAST_MODEL,
             is_pro=False,
-            retrieval=retrieval,
             client_ip=client_ip,
         )
     except Exception as e:

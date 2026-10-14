@@ -8,7 +8,6 @@ export const queryRequestSchema = z.object({
     topic: z.string().min(1),
     levels: z.array(levelSchema).optional(),
     mode: modeSchema.optional(),
-    retrieval: z.enum(['auto', 'required', 'on', 'off']).optional(),
     temperature: z.number().optional(),
     regenerate: z.boolean().optional(),
 })

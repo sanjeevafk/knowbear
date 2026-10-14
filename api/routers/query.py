@@ -47,8 +47,7 @@ class QueryRequest(BaseModel):
     )
     retrieval: str | None = Field(
         default=None, 
-        pattern="^(auto|required|on|off)$",
-        description="Web retrieval mode parameter.",
+        description="Legacy web retrieval parameter (deprecated, ignored).",
         json_schema_extra={"example": "auto"}
     )
     temperature: float = Field(
@@ -109,8 +108,8 @@ def _get_client_ip(request: Request) -> str:
     return "unknown"
 
 
-def _cache_key(topic: str, level: str, mode: str, retrieval: str | None) -> str:
-    return f"query_cache:{topic.lower()}::{level}::{mode}::{retrieval or 'auto'}"
+def _cache_key(topic: str, level: str, mode: str | None = None) -> str:
+    return f"query_cache:{topic.lower()}::{level}"
 
 
 async def _cache_get(key: str) -> str | None:
@@ -185,14 +184,14 @@ async def query_topic(req: QueryRequest, request: Request) -> QueryResponse:
     logger.info("query_start_generation", topic=topic, levels=levels, mode=req.mode)
     tasks: dict[str, asyncio.Task[str]] = {}
     for level in levels:
-        key = _cache_key(topic, level, req.mode, req.retrieval)
+        key = _cache_key(topic, level, req.mode)
         if not req.regenerate:
             cached = await _cache_get(key)
             if cached:
                 explanations[level] = cached
                 continue
         tasks[level] = asyncio.create_task(
-            ensemble_generate(topic, level, req.mode, req.retrieval, client_ip=client_ip)
+            ensemble_generate(topic, level, req.mode, client_ip=client_ip)
         )
 
     results = await asyncio.gather(*tasks.values(), return_exceptions=True) if tasks else []
@@ -200,7 +199,7 @@ async def query_topic(req: QueryRequest, request: Request) -> QueryResponse:
         if isinstance(result, str):
             explanations[level] = result
             if not req.regenerate:
-                await _cache_set(_cache_key(topic, level, req.mode, req.retrieval), result)
+                await _cache_set(_cache_key(topic, level, req.mode), result)
         elif isinstance(result, TokenRateLimitExceeded):
             raise HTTPException(
                 status_code=429,
@@ -259,7 +258,7 @@ async def query_topic_stream(req: QueryRequest, request: Request):
         raise HTTPException(400, str(e)) from e
 
     level = req.levels[0] if req.levels and req.levels[0] in ALL_LEVELS else "eli5"
-    cache_key = _cache_key(topic, level, req.mode, req.retrieval)
+    cache_key = _cache_key(topic, level, req.mode)
     if not req.regenerate:
         cached = await _cache_get(cache_key)
         if cached:
@@ -286,7 +285,6 @@ async def query_topic_stream(req: QueryRequest, request: Request):
                 topic,
                 level,
                 mode=req.mode,
-                retrieval=req.retrieval,
                 is_pro=False,
                 temperature=req.temperature,
                 regenerate=req.regenerate,

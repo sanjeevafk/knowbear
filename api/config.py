@@ -15,9 +15,6 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     token_rate_limit_enabled: bool = True
     token_rate_limit_per_ip_hour: int = 12000
-    tavily_api_key: str = ""
-    serper_api_key: str = ""
-    exa_api_key: str = ""
 
     class Config:
         env_file = (".env", "../.env")
