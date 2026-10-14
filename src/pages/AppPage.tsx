@@ -1,9 +1,9 @@
 import { useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { RefreshCcw, RotateCcw, AlertTriangle } from 'lucide-react'
+import { RotateCcw, AlertTriangle } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
-import type { Level, Mode, PinnedTopic } from '../types'
+import type { Level, PinnedTopic } from '../types'
 import SearchBar from '../components/SearchBar'
 import LevelDropdown from '../components/LevelDropdown'
 import ExplanationCard from '../components/ExplanationCard'
@@ -30,12 +30,10 @@ export default function AppPage() {
         result,
         selectedLevel,
         error,
-        mode,
         fetchingLevels,
         failedLevels,
         activeTopic,
         loadingMeta,
-        modeSwitching,
         streamStatus,
         lastFailedRequest,
         pinnedTopics,
@@ -46,12 +44,10 @@ export default function AppPage() {
         result: state.result,
         selectedLevel: state.selectedLevel,
         error: state.error,
-        mode: state.mode,
         fetchingLevels: state.fetchingLevels,
         failedLevels: state.failedLevels,
         activeTopic: state.activeTopic,
         loadingMeta: state.loadingMeta,
-        modeSwitching: state.modeSwitching,
         streamStatus: state.streamStatus,
         lastFailedRequest: state.lastFailedRequest,
         pinnedTopics: state.pinnedTopics,
@@ -61,26 +57,16 @@ export default function AppPage() {
 
     const {
         setSelectedLevel,
-        setMode,
-        setModeSwitching,
-        setResult,
-        setFetchingLevels,
         startSearch,
         fetchLevel,
-        abortCurrentStream,
         retryLastFailed,
         fetchPinnedTopics,
         setIsSidebarOpen,
         toggleFavoriteTopic,
     } = useKnowBearStore(useShallow((state) => ({
         setSelectedLevel: state.setSelectedLevel,
-        setMode: state.setMode,
-        setModeSwitching: state.setModeSwitching,
-        setResult: state.setResult,
-        setFetchingLevels: state.setFetchingLevels,
         startSearch: state.startSearch,
         fetchLevel: state.fetchLevel,
-        abortCurrentStream: state.abortCurrentStream,
         retryLastFailed: state.retryLastFailed,
         fetchPinnedTopics: state.fetchPinnedTopics,
         setIsSidebarOpen: state.setIsSidebarOpen,
@@ -88,8 +74,8 @@ export default function AppPage() {
     })))
 
     const handleSearch = useCallback(
-        async (topic: string, forceRefresh = false, requestedMode?: Mode, requestedLevel?: Level) => {
-            await startSearch(topic, forceRefresh, requestedMode, requestedLevel)
+        async (topic: string, forceRefresh = false, requestedLevel?: Level) => {
+            await startSearch(topic, forceRefresh, requestedLevel)
         },
         [startSearch]
     )
@@ -107,27 +93,6 @@ export default function AppPage() {
         fetchPinnedTopics()
     }, [fetchPinnedTopics])
 
-    useEffect(() => {
-        if (activeTopic && !loading && result && result.mode !== mode && !loadingMeta) {
-            setModeSwitching(true)
-            abortCurrentStream()
-            setResult(null)
-            setFetchingLevels(new Set())
-            handleSearch(activeTopic, false, mode).finally(() => setModeSwitching(false))
-        }
-    }, [
-        mode,
-        activeTopic,
-        loading,
-        result,
-        loadingMeta,
-        abortCurrentStream,
-        handleSearch,
-        setFetchingLevels,
-        setModeSwitching,
-        setResult,
-    ])
-
     const handleLevelClick = async (level: Level) => {
         if (!result) return
 
@@ -140,14 +105,14 @@ export default function AppPage() {
         setSelectedLevel(level)
 
         if (!currentExplanation && !fetchingLevels.has(level)) {
-            await fetchLevel(result.topic, level, mode)
+            await fetchLevel(result.topic, level)
         }
     }
 
     const handleRegenerateSelectedLevel = async () => {
         if (!result || !activeTopic) return
         const randomTemp = Math.random() * (1.1 - 0.95) + 0.95
-        await fetchLevel(activeTopic, selectedLevel, mode, { regenerate: true, temperature: randomTemp })
+        await fetchLevel(activeTopic, selectedLevel, { regenerate: true, temperature: randomTemp })
     }
 
     const streamBadge =
@@ -207,18 +172,7 @@ export default function AppPage() {
                         {/* Render SearchBar at top ONLY if result is present or loading */}
                         {(result || loading) && (
                             <div className="space-y-4 pt-2 sm:pt-3">
-                                <SearchBar onSearch={(topic) => handleSearch(topic, false)} loading={loading} mode={mode} onModeChange={setMode} value={activeTopic} />
-
-                                {modeSwitching && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="flex items-center gap-2 text-sm text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-2"
-                                    >
-                                        <RefreshCcw className="w-4 h-4 animate-spin" />
-                                        <span>Switching mode...</span>
-                                    </motion.div>
-                                )}
+                                <SearchBar onSearch={(topic) => handleSearch(topic, false)} loading={loading} value={activeTopic} />
 
                                 {error && (
                                     <motion.div
@@ -237,7 +191,7 @@ export default function AppPage() {
                                                     Retry Last Failed
                                                 </button>
                                                 <span className="text-xs text-red-200/70">
-                                                    {lastFailedRequest.topic} · {lastFailedRequest.mode} · {lastFailedRequest.level}
+                                                    {lastFailedRequest.topic} · {lastFailedRequest.level}
                                                 </span>
                                             </div>
                                         )}
@@ -248,7 +202,7 @@ export default function AppPage() {
                         <AnimatePresence mode="wait">
                             {loading && loadingMeta ? (
                                 <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                    <LoadingState mode={loadingMeta.mode} level={loadingMeta.level} topic={loadingMeta.topic} />
+                                    <LoadingState level={loadingMeta.level} topic={loadingMeta.topic} />
                                 </motion.div>
                             ) : result ? (
                                 <motion.section
@@ -263,7 +217,7 @@ export default function AppPage() {
                                             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight break-words">{result.topic}</h2>
                                             <div className="mt-1 flex flex-wrap items-center gap-2">
                                                 <p className="text-sm text-gray-500">
-                                                    Mode: <span className="text-amber-400 font-medium">{mode}</span>
+                                                    Model: <span className="text-amber-400 font-medium">GPT-OSS 20B</span>
                                                 </p>
                                                 {streamBadge && (
                                                     <span className={`text-[11px] px-2 py-0.5 rounded-full border ${streamBadge.className}`}>
@@ -325,7 +279,7 @@ export default function AppPage() {
                                     </div>
 
                                     <div className="w-full">
-                                        <SearchBar onSearch={(topic) => handleSearch(topic, false)} loading={loading} mode={mode} onModeChange={setMode} />
+                                        <SearchBar onSearch={(topic) => handleSearch(topic, false)} loading={loading} />
                                     </div>
 
                                     {visiblePinnedTopics.length > 0 && (

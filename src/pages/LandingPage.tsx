@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Github } from 'lucide-react'
 import type { PinnedTopic } from '../types'
 
 export default function LandingPage() {
@@ -24,15 +23,6 @@ export default function LandingPage() {
                     <img src="/favicon.svg" alt="KnowBear" className="w-5 h-5" />
                     <span>KnowBear</span>
                 </div>
-                <a
-                    href="https://github.com/sanjeevafk/knowbear-web"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="landing-header-link"
-                    aria-label="GitHub Repository"
-                >
-                    <Github className="w-5 h-5" />
-                </a>
             </header>
 
             <main className="landing-main max-w-4xl text-center items-center py-12 flex flex-col justify-center gap-16 flex-1">
@@ -54,15 +44,6 @@ export default function LandingPage() {
                         >
                             Start Explaining
                         </button>
-                        <a
-                            href="https://github.com/sanjeevafk/knowbear-web"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-8 py-4 bg-dark-800 hover:bg-dark-700 border border-dark-600 rounded-xl font-bold text-lg text-white transition-all transform active:scale-95 flex items-center justify-center gap-2"
-                        >
-                            <Github className="w-5 h-5" />
-                            Star on GitHub
-                        </a>
                     </div>
                 </div>
 

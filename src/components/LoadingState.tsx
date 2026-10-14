@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import type { Mode, Level } from '../types'
+import type { Level } from '../types'
 import { Loader2, Quote } from 'lucide-react'
 
 interface LoadingStateProps {
-    mode: Mode
+    mode?: string
     level: Level
     topic: string
 }
@@ -16,19 +16,17 @@ const FALLBACK_QUOTES = [
     "Live as if you were to die tomorrow. Learn as if you were to live forever. — Mahatma Gandhi"
 ]
 
-export const LoadingState: React.FC<LoadingStateProps> = ({ mode, level, topic }) => {
+export const LoadingState: React.FC<LoadingStateProps> = ({ level, topic }) => {
     const [message, setMessage] = useState('')
     const [quote, setQuote] = useState<string | null>(null)
 
     useEffect(() => {
-        let baseMessage = 'Generating your explanation...'
+        let baseMessage = 'Crafting your explanation...'
 
         if (level === 'eli5') {
             baseMessage = 'Brewing your ELI5 explanation...'
         } else if (level === 'eli12') {
             baseMessage = 'Preparing a clear middle-school friendly explanation...'
-        } else if (mode === 'fast' || mode === 'ensemble') {
-            baseMessage = 'Crafting your answer...'
         }
 
         // Bonus hints
@@ -60,7 +58,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({ mode, level, topic }
         }
 
         fetchQuote()
-    }, [mode, level, topic])
+    }, [level, topic])
 
     return (
         <div className="flex flex-col items-center justify-center p-12 min-h-[400px] animate-in fade-in duration-700">
