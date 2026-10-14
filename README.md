@@ -1,52 +1,50 @@
 # KnowBear
 
-KnowBear is a multi-depth explanation engine that breaks down complex software, systems, and concepts across the **Ladder of Abstraction**—from plain physical analogies to concrete code implementations.
-
-It is available both as a full-stack web application and as a native AI agent skill.
+KnowBear is an explanation engine that breaks down complex software, systems, and concepts across multiple cognitive depths. It is available in two distinct interfaces:
 
 ---
 
-## What It Does
+## 1. AI Agent Skill (`skills/knowbear`)
 
-KnowBear explains any topic, codebase, or technical problem across 4 progressive cognitive depths:
+A workspace-aware reasoning tool for Claude Code, Antigravity, and other agent harnesses. It climbs the **Ladder of Abstraction** and grounds explanations directly in your repository:
 
-1. **ELI5 & Sensory Analogy:** Physical intuition, sensory metaphors, zero jargon.
-2. **Functional Mental Model:** The problem statement, core inputs/outputs, and boundaries.
-3. **Systems Architecture:** Component flow, lifecycles, and visual Mermaid diagrams.
-4. **Concrete Implementation:** Real code grounding, line references, algorithmic complexity, and failure modes.
-5. **Punchline:** A sharp one-liner meme distillation.
-
----
-
-## Interfaces
-
-### 1. AI Agent Skill (`skills/knowbear`)
-
-Use directly inside Claude Code, Antigravity, or other agent harnesses:
+- **Rung 1 (ELI5):** Sensory, physical analogies with zero jargon.
+- **Rung 2 (Mental Model):** Problem statement, input/output contracts, and boundaries.
+- **Rung 3 (Architecture):** Component topologies and clean Mermaid flowcharts.
+- **Rung 4 (Code Grounding):** Real workspace code citations (`file://`), line ranges, algorithmic complexity, and failure modes.
+- **Punchline:** A sharp one-liner meme distillation.
 
 ```bash
-/knowbear <topic or file>    # Full 4-rung ladder
+/knowbear <topic or file>    # Full 4-rung progressive ladder
 /knowbear eli5 <topic>       # Rung 1 only (sensory analogy)
 /knowbear model <topic>      # Rung 2 only (functional model)
-/knowbear arch <topic>       # Rung 3 only (system flow + diagram)
+/knowbear arch <topic>       # Rung 3 only (flow + diagram)
 /knowbear deep <topic>       # Rung 4 only (code inspection)
 /knowbear meme <topic>       # Punchline one-liner
 ```
 
-### 2. Full-Stack Web App
+---
 
-- **Frontend:** React, Vite, TypeScript, Tailwind, Zustand
-- **Backend:** FastAPI, Groq (`openai/gpt-oss-20b`), streaming SSE, Upstash Redis
+## 2. Full-Stack Web App
 
-#### Quickstart
+A fast, distraction-free reading interface for conceptual explanations across 4 audience levels:
+
+- **ELI5:** Simple sensory analogies for a 5-year-old.
+- **ELI12:** Middle-school level concepts with relatable everyday examples.
+- **ELI15:** High-school depth connecting broader ideas.
+- **Meme:** Humorous, punchy one-liner summaries.
+
+*(Note: The web app focuses purely on conversational text paragraphs. Code implementation and architecture diagrams are powered by the Agent Skill.)*
+
+### Quickstart
 
 ```bash
 npm run local:start
 ```
 
-Starts the frontend at `http://localhost:5173` and backend at `http://localhost:8000`.
+Starts the React frontend at `http://localhost:5173` and FastAPI backend (`openai/gpt-oss-20b`) at `http://localhost:8000`.
 
-Or with Docker:
+Or via Docker:
 
 ```bash
 docker compose up --build
