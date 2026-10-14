@@ -132,11 +132,8 @@ class ModelProvider:
         if not self.groq_client:
             return await self._fallback_to_gemini(prompt, client_ip=client_ip)
 
-        # Apply word cap for fast modes even if pro (user's request)
-        if mode == "fast":
-            max_tokens = 1200  # Increased from 400 to prevent truncation
-
-        request_timeout = 10.0 if mode == "fast" else 18.0
+        mode = kwargs.get("mode") or "standard"
+        request_timeout = 15.0
         try:
             started = time.perf_counter()
             completion = await self.groq_client.chat.completions.create(
@@ -181,8 +178,9 @@ class ModelProvider:
             yield res["content"]
             return
 
+        mode = kwargs.get("mode") or "standard"
+        request_timeout = 15.0
         try:
-            request_timeout = 10.0 if mode == "fast" else 18.0
             started = time.perf_counter()
             stream = await self.groq_client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
