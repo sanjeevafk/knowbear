@@ -19,7 +19,7 @@ async def test_generate_stream_explanation_regenerate_appends_quote(monkeypatch)
     async def fake_quote():
         return "---\n*\"Quote\"*"
 
-    async def fake_search_context(_topic, mode="fast"):
+    async def fake_search_context(_topic, **_kwargs):
         return ""
 
     monkeypatch.setattr(model_provider.ModelProvider, "get_instance", classmethod(lambda cls: DummyProvider()))

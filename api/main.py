@@ -50,7 +50,7 @@ KnowBear provides a structured educational system that synthesizes topics at var
     version="1.0.0",
     contact={
         "name": "KnowBear Development Team",
-        "url": "https://github.com/sanjeevafk/knowbear-web",
+        "url": "https://github.com/sanjeevafk/knowbear",
     },
     license_info={
         "name": "MIT",

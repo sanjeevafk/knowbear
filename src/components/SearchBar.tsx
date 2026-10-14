@@ -1,17 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { Search, Loader2 } from 'lucide-react'
-import type { Mode } from '../types'
-import ModeDropdown from './ModeDropdown'
 
 interface SearchBarProps {
     onSearch: (topic: string) => void
     loading: boolean
-    mode: Mode
-    onModeChange: (mode: Mode) => void
     value?: string
 }
 
-export default function SearchBar({ onSearch, loading, mode, onModeChange, value = '' }: SearchBarProps) {
+export default function SearchBar({ onSearch, loading, value = '' }: SearchBarProps) {
     const [topic, setTopic] = useState(value)
     const [isFocused, setIsFocused] = useState(false)
     const [placeholder, setPlaceholder] = useState("What passes for knowledge...?")
@@ -71,8 +67,7 @@ export default function SearchBar({ onSearch, loading, mode, onModeChange, value
                     />
 
                     <div className="hidden md:flex items-center gap-3 mr-2">
-                        <ModeDropdown selected={mode} onChange={onModeChange} disabled={loading} />
-                        <div className="flex items-center gap-2 text-[10px] text-dark-400 font-bold uppercase tracking-widest border-l border-dark-700 pl-3">
+                        <div className="flex items-center gap-2 text-[10px] text-dark-400 font-bold uppercase tracking-widest pl-2">
                             <kbd className="bg-dark-700/50 px-1.5 py-0.5 rounded border border-dark-600">/</kbd>
                             <span>Focus</span>
                         </div>
@@ -91,11 +86,6 @@ export default function SearchBar({ onSearch, loading, mode, onModeChange, value
                     </button>
                 </div>
             </form>
-
-            {/* Mobile Mode Selection (visible only on small screens, outside search bar for better space) */}
-            <div className="flex md:hidden justify-center py-1">
-                <ModeDropdown selected={mode} onChange={onModeChange} disabled={loading} />
-            </div>
         </div>
     )
 }

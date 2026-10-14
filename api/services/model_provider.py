@@ -104,33 +104,9 @@ class ModelProvider:
                 logger.error("gemini_heavy_failed", error=str(e))
                 raise ModelError(f"Gemini generation failed: {e}")
 
-        # 2. INTELLIGENT ROUTING (Groq)
-        target_model = "llama-3.1-8b-instant" # Default for speed/simple tasks
-        max_tokens = 1024
-        
-        # Mode/Task based routing
-        mode = kwargs.get("mode", "").lower()
-        
-        # A. Coding / Technical
-        if task == "coding" or "code" in task.lower():
-            target_model = "llama-3.3-70b-versatile"
-            max_tokens = 2048
-            
-        # C. Multilingual Support
-        elif kwargs.get("multilingual", False) or any(ord(c) > 127 for c in prompt[:100]):
-             target_model = "moonshotai/kimi-k2-instruct-0905"
-             max_tokens = 2048
-             
-        # D. Fast Mode (Llama models only as requested)
-        elif mode == "fast":
-            # Using llama-3.1-8b-instant for speed
-            target_model = "llama-3.1-8b-instant"
-            max_tokens = 1200  # Increased from 400 to prevent truncation 
-            
-        # E. Simple / Old Modes (Explicit Cap)
-        elif mode == "eli5":
-            target_model = "llama-3.1-8b-instant"
-            max_tokens = 1200  # Increased from 400 to prevent truncation
+        # 2. INTELLIGENT ROUTING (Groq: GPT-OSS 20B)
+        target_model = "openai/gpt-oss-20b"
+        max_tokens = 1200
             
         # 4. OVERRIDE if specific valid model requested
         req_model = kwargs.get("model")
@@ -196,21 +172,8 @@ class ModelProvider:
         """Stream inference results for real-time UI."""
         client_ip = kwargs.get("client_ip", "unknown")
         await consume_tokens(client_ip, estimate_tokens(prompt))
-        mode = kwargs.get("mode", "").lower()
-
-        if mode == "fast":
-            # Fast mode uses llama models only
-            target_model = "llama-3.1-8b-instant"
-            max_tokens = 1200  # Increased from 400 to prevent truncation
-        elif mode == "ensemble":
-            target_model = "llama-3.3-70b-versatile"
-            max_tokens = 1600
-        else:
-            target_model = "llama-3.1-8b-instant"
-            max_tokens = 1024
-            
-        if mode == "eli5":
-            max_tokens = 1200  # Increased from 400 to prevent truncation
+        target_model = "openai/gpt-oss-20b"
+        max_tokens = 1200
 
         if not self.groq_client:
             # Fallback for now just returns full text as a single chunk if streaming is unavailable

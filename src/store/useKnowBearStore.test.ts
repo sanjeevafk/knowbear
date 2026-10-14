@@ -33,7 +33,7 @@ describe('useKnowBearStore', () => {
         const { result } = renderHook(() => useKnowBearStore())
         expect(result.current.loading).toBe(false)
         expect(result.current.result).toBeNull()
-        expect(result.current.mode).toBe('fast')
+        expect(result.current.selectedLevel).toBe('eli5')
     })
 
     it('loads fresh result in startSearch', async () => {
@@ -72,14 +72,13 @@ describe('useKnowBearStore', () => {
 
         await act(async () => {
             await result.current.startSearch('thermodynamics')
-            await result.current.fetchLevel('thermodynamics', 'eli5', 'fast', { regenerate: true, temperature: 1.03 })
+            await result.current.fetchLevel('thermodynamics', 'eli5', { regenerate: true, temperature: 1.03 })
         })
 
         const regenerateCall = streamMock.mock.calls[1]
         expect(regenerateCall?.[0]).toMatchObject({
             topic: 'thermodynamics',
             levels: ['eli5'],
-            mode: 'fast',
             regenerate: true,
             temperature: 1.03,
         })

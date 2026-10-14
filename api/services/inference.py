@@ -26,7 +26,7 @@ async def call_model(model: str, prompt: str, max_tokens: int = 1024, **kwargs) 
     provider = ModelProvider.get_instance()
     
     task = kwargs.get("task", "general")
-    if model in ["llama-3.3-70b-versatile", "deep_dive"]:
+    if model in ["openai/gpt-oss-120b", "llama-3.3-70b-versatile", "deep_dive"]:
          task = "coding"
             
     try:
@@ -44,25 +44,18 @@ async def call_model(model: str, prompt: str, max_tokens: int = 1024, **kwargs) 
 
 
 
-async def generate_explanation(topic: str, level: str, model: str, **kwargs) -> str:
+async def generate_explanation(topic: str, level: str, model: str = "openai/gpt-oss-20b", **kwargs) -> str:
     """Generate explanation for topic at given level."""
-    mode = kwargs.get("mode", "ensemble").lower()
-    if mode not in {"fast", "ensemble"}:
-        mode = "fast"
-
     template = PROMPTS.get(level)
     if not template:
         raise ValueError(f"Unknown level: {level}")
 
     prompt = template.format(topic=topic)
-    retrieval = kwargs.get("retrieval")
-    if retrieval is None:
-        retrieval = "required" if mode == "ensemble" else "auto"
-    context = await search_service.get_search_context(topic, mode=mode, retrieval=retrieval)
+    retrieval = kwargs.get("retrieval", "auto")
+    context = await search_service.get_search_context(topic, retrieval=retrieval)
 
     if context and context != "No external context found.":
-        max_context_chars = 900 if mode == "fast" else 2600
-        context_block = context[:max_context_chars]
+        context_block = context[:1500]
         prompt += (
             "\n\nExternal context (web retrieval):\n"
             f"{context_block}\n\n"
@@ -75,22 +68,16 @@ async def generate_explanation(topic: str, level: str, model: str, **kwargs) -> 
 async def generate_stream_explanation(topic: str, level: str, **kwargs):
     """Stream explanation for topic at given level."""
     from services.model_provider import ModelProvider
-    mode = kwargs.get("mode", "ensemble").lower()
-    if mode not in {"fast", "ensemble"}:
-        mode = "fast"
 
     template = PROMPTS.get(level)
     if not template:
         raise ValueError(f"Unknown level: {level}")
     prompt = template.format(topic=topic)
 
-    retrieval = kwargs.get("retrieval")
-    if retrieval is None:
-        retrieval = "required" if mode == "ensemble" else "auto"
-    context = await search_service.get_search_context(topic, mode=mode, retrieval=retrieval)
+    retrieval = kwargs.get("retrieval", "auto")
+    context = await search_service.get_search_context(topic, retrieval=retrieval)
     if context and context != "No external context found.":
-        max_context_chars = 900 if mode == "fast" else 2600
-        context_block = context[:max_context_chars]
+        context_block = context[:1500]
         prompt += (
             "\n\nExternal context (web retrieval):\n"
             f"{context_block}\n\n"

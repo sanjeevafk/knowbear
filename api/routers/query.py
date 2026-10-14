@@ -40,10 +40,10 @@ class QueryRequest(BaseModel):
         description="The target explanation depth levels.",
         json_schema_extra={"example": ["eli5", "eli12"]}
     )
-    mode: str = Field(
-        "ensemble",
-        description="The generation mode: 'fast' or 'ensemble'.",
-        json_schema_extra={"example": "ensemble"}
+    mode: str | None = Field(
+        default=None,
+        description="Optional generation mode parameter (legacy).",
+        json_schema_extra={"example": "standard"}
     )
     retrieval: str | None = Field(
         default=None, 
@@ -83,8 +83,8 @@ class QueryResponse(BaseModel):
     )
 
 
-def _normalize_mode(mode: str) -> str:
-    return mode if mode in {"fast", "ensemble"} else "fast"
+def _normalize_mode(mode: str | None) -> str:
+    return "standard"
 
 
 def _normalize_levels(levels: list[str]) -> list[str]:

@@ -37,6 +37,7 @@ JUDGE_PROMPT = """Rate these responses for "{topic}" on coherence (1-5), accurac
 Output JSON: {{"best": 0|1, "reason": "brief"}}"""
 
 # Model configs
-FAST_MODEL = "llama-3.1-8b-instant"
-ENSEMBLE_MODELS = ["llama-3.3-70b-versatile", "openai/gpt-oss-20b"]
+MODEL = "openai/gpt-oss-20b"
+FAST_MODEL = "openai/gpt-oss-20b"
+ENSEMBLE_MODELS = ["openai/gpt-oss-20b"]
 JUDGE_MODEL = "gemini-2.5-flash"

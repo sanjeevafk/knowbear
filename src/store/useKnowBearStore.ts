@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import type { QueryResponse, Mode, Level, PinnedTopic, StreamStatus } from '../types'
+import type { QueryResponse, Level, PinnedTopic, StreamStatus } from '../types'
 import { queryTopicStream } from '../api'
 
 const MAX_TOPIC_HISTORY = 12
@@ -11,38 +11,34 @@ interface KnowBearState {
     result: QueryResponse | null
     selectedLevel: Level
     error: string | null
-    mode: Mode
     fetchingLevels: Set<Level>
     failedLevels: Set<Level>
     isSidebarOpen: boolean
     activeTopic: string
-    loadingMeta: { mode: Mode; level: Level; topic: string } | null
-    modeSwitching: boolean
+    loadingMeta: { level: Level; topic: string } | null
     abortController: AbortController | null
     pinnedTopics: PinnedTopic[]
     pinnedTopicsLoaded: boolean
     streamStatus: StreamStatus
     favoriteTopics: string[]
-    lastFailedRequest: { topic: string; mode: Mode; level: Level } | null
+    lastFailedRequest: { topic: string; level: Level } | null
 
     setLoading: (loading: boolean) => void
     setResult: (result: QueryResponse | null) => void
     setSelectedLevel: (level: Level) => void
     setError: (error: string | null) => void
-    setMode: (mode: Mode) => void
     setFetchingLevels: (levels: Set<Level>) => void
     setFailedLevels: (levels: Set<Level>) => void
     setIsSidebarOpen: (open: boolean) => void
     setActiveTopic: (topic: string) => void
-    setLoadingMeta: (meta: { mode: Mode; level: Level; topic: string } | null) => void
-    setModeSwitching: (switching: boolean) => void
+    setLoadingMeta: (meta: { level: Level; topic: string } | null) => void
     setStreamStatus: (status: StreamStatus) => void
     toggleFavoriteTopic: (topic: string) => void
     fetchPinnedTopics: () => Promise<void>
     retryLastFailed: () => Promise<void>
 
-    startSearch: (topic: string, forceRefresh?: boolean, requestedMode?: Mode, requestedLevel?: Level) => Promise<void>
-    fetchLevel: (topic: string, level: Level, mode: Mode, options?: { temperature?: number; regenerate?: boolean }) => Promise<void>
+    startSearch: (topic: string, forceRefresh?: boolean, requestedLevel?: Level) => Promise<void>
+    fetchLevel: (topic: string, level: Level, options?: { temperature?: number; regenerate?: boolean }) => Promise<void>
     abortCurrentStream: () => void
     reset: () => void
 }
@@ -52,13 +48,11 @@ const initialState = {
     result: null,
     selectedLevel: 'eli5' as Level,
     error: null,
-    mode: 'fast' as Mode,
     fetchingLevels: new Set<Level>(),
     failedLevels: new Set<Level>(),
     isSidebarOpen: true,
     activeTopic: '',
     loadingMeta: null,
-    modeSwitching: false,
     abortController: null,
     pinnedTopics: [],
     pinnedTopicsLoaded: false,
@@ -76,13 +70,11 @@ export const useKnowBearStore = create<KnowBearState>()(
             setResult: (result) => set({ result }),
             setSelectedLevel: (selectedLevel) => set({ selectedLevel }),
             setError: (error) => set({ error }),
-            setMode: (mode) => set({ mode }),
             setFetchingLevels: (fetchingLevels) => set({ fetchingLevels }),
             setFailedLevels: (failedLevels) => set({ failedLevels }),
             setIsSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
             setActiveTopic: (activeTopic) => set({ activeTopic }),
             setLoadingMeta: (loadingMeta) => set({ loadingMeta }),
-            setModeSwitching: (modeSwitching) => set({ modeSwitching }),
             setStreamStatus: (streamStatus) => set({ streamStatus }),
             toggleFavoriteTopic: (topic) => {
                 const cleanTopic = topic.trim()
@@ -114,7 +106,7 @@ export const useKnowBearStore = create<KnowBearState>()(
                 }
             },
 
-            fetchLevel: async (topic: string, level: Level, mode: Mode, options?: { temperature?: number; regenerate?: boolean }) => {
+            fetchLevel: async (topic: string, level: Level, options?: { temperature?: number; regenerate?: boolean }) => {
                 const state = get()
                 const newFetching = new Set(state.fetchingLevels)
                 newFetching.add(level)
@@ -131,8 +123,6 @@ export const useKnowBearStore = create<KnowBearState>()(
                         {
                             topic,
                             levels: [level],
-                            mode,
-                            retrieval: mode === 'fast' ? 'off' : undefined,
                             temperature: options?.temperature,
                             regenerate: options?.regenerate || false,
                         },
@@ -163,7 +153,7 @@ export const useKnowBearStore = create<KnowBearState>()(
                                 failedLevels: failed,
                                 error: message,
                                 streamStatus: 'degraded',
-                                lastFailedRequest: { topic, mode, level },
+                                lastFailedRequest: { topic, level },
                             })
                         },
                         controller.signal,
@@ -179,7 +169,7 @@ export const useKnowBearStore = create<KnowBearState>()(
                             failedLevels: failed,
                             error: err instanceof Error ? err.message : 'Request failed',
                             streamStatus: 'degraded',
-                            lastFailedRequest: { topic, mode, level },
+                            lastFailedRequest: { topic, level },
                         })
                     }
                 } finally {
@@ -193,25 +183,23 @@ export const useKnowBearStore = create<KnowBearState>()(
                 }
             },
 
-            startSearch: async (topic: string, forceRefresh = false, requestedMode?: Mode, requestedLevel?: Level) => {
+            startSearch: async (topic: string, forceRefresh = false, requestedLevel?: Level) => {
                 if (!topic.trim()) return
 
                 const state = get()
                 state.abortCurrentStream()
 
-                const effectiveMode = requestedMode || state.mode
                 const activeLevel = requestedLevel || state.selectedLevel
 
                 if (!forceRefresh) {
                     set({ result: null, error: null, lastFailedRequest: null })
                 }
 
-                if (requestedMode && requestedMode !== state.mode) set({ mode: requestedMode })
                 if (requestedLevel && requestedLevel !== state.selectedLevel) set({ selectedLevel: activeLevel })
 
                 set({
                     activeTopic: topic,
-                    loadingMeta: { mode: effectiveMode, level: activeLevel, topic },
+                    loadingMeta: { level: activeLevel, topic },
                     loading: true,
                     error: null,
                     streamStatus: 'idle',
@@ -228,14 +216,14 @@ export const useKnowBearStore = create<KnowBearState>()(
                         })
                     } else {
                         set({
-                            result: { topic, explanations: {}, mode: effectiveMode },
+                            result: { topic, explanations: {} },
                         })
                     }
 
                     const randomTemp = Math.random() * (1.1 - 0.95) + 0.95
                     set({ fetchingLevels: new Set(), failedLevels: new Set() })
 
-                    await get().fetchLevel(topic, activeLevel, effectiveMode, {
+                    await get().fetchLevel(topic, activeLevel, {
                         temperature: randomTemp,
                         regenerate: true,
                     })
@@ -244,19 +232,19 @@ export const useKnowBearStore = create<KnowBearState>()(
                 }
 
                 set({
-                    result: { topic, explanations: {}, mode: effectiveMode },
+                    result: { topic, explanations: {} },
                     fetchingLevels: new Set(),
                     failedLevels: new Set(),
                 })
 
-                await get().fetchLevel(topic, activeLevel, effectiveMode)
+                await get().fetchLevel(topic, activeLevel)
                 set({ loading: false, loadingMeta: null })
             },
 
             retryLastFailed: async () => {
                 const failed = get().lastFailedRequest
                 if (!failed) return
-                await get().startSearch(failed.topic, true, failed.mode, failed.level)
+                await get().startSearch(failed.topic, true, failed.level)
             },
 
             reset: () => set({ ...initialState }),
@@ -265,7 +253,6 @@ export const useKnowBearStore = create<KnowBearState>()(
             name: STORE_KEY,
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
-                mode: state.mode,
                 selectedLevel: state.selectedLevel,
                 isSidebarOpen: state.isSidebarOpen,
                 favoriteTopics: state.favoriteTopics,
