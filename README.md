@@ -45,15 +45,15 @@ User Browser            |  - Zustand global store   |
      v                         v
 +----+----------------+   +---+----------------------+
 | Inference Services  |   | Cache / Rate Limiting    |
-| - ensemble/fast     |   | - Upstash Redis (opt)    |
-| - provider routing  |   | - in-memory fallback     |
-| - stream generation |   +--------------------------+
+| - provider routing  |   | - Upstash Redis (opt)    |
+| - stream generation |   | - in-memory fallback     |
+| - model fallback    |   +--------------------------+
 +----+----------------+
      |
      v
 +----+----------------+      +------------------------+
 | LLM Providers       |      | Retrieval Providers    |
-| Groq / Gemini       |      | Tavily / Serper / Exa |
+| Groq / Gemini       |      | Tavily / Serper / Exa  |
 +---------------------+      +------------------------+
 ```
 
@@ -64,6 +64,24 @@ User Browser            |  - Zustand global store   |
 - `POST /api/query/stream` - stream explanations over SSE
 - `GET /api/health` - service health metadata
 - `GET /api/keep-alive` - lightweight warmup probe (includes Upstash ping/get if configured)
+
+## Agent Skill (`skills/knowbear`)
+
+KnowBear is also packaged as a native AI Agent Skill (for Claude Code, Antigravity, and other skill-compatible agent runtimes). It implements a multi-depth cognitive explanation engine following the **Ladder of Abstraction**:
+
+- **Rung 1 (ELI5 & Sensory Analogy):** Physical world intuition, zero technical jargon, sensory anchors.
+- **Rung 2 (Functional Mental Model):** Explicit problem statement, input/output contract, and operational boundaries.
+- **Rung 3 (Systems Architecture):** Component topologies, state transitions, lifecycle sequences, and crisp Mermaid diagrams.
+- **Rung 4 (Concrete Code Grounding):** Citing real workspace source files (`file://`), line ranges, complexity, AST/types, and failure modes.
+- **Punchline (Meme / One-Liner):** Sharp distillation capturing the pragmatic truth of the concept.
+
+### Triggers & Slash Commands
+- `/knowbear <topic or file>` — Full 4-rung progressive explanation ladder.
+- `/knowbear eli5 <topic>` — Rung 1 only.
+- `/knowbear model <topic>` — Rung 2 only.
+- `/knowbear arch <topic>` — Rung 3 only (flow + diagram).
+- `/knowbear deep <topic>` — Rung 4 only (code inspection).
+- `/knowbear meme <topic>` — Punchline one-liner.
 
 ## Local Development
 
