@@ -199,18 +199,13 @@ export default function SearchBar({ onSearch, loading, value = '', initialImage 
                             <ImageIcon className="w-5 h-5" />
                         </button>
 
-                        <div className="hidden md:flex items-center gap-3">
-                            {topic.length > 80 ? (
+                        {topic.length > 80 && (
+                            <div className="hidden md:flex items-center gap-3">
                                 <span className="text-[11px] font-mono text-gray-500">
                                     {topic.length}/2000
                                 </span>
-                            ) : (
-                                <div className="flex items-center gap-2 text-[10px] text-dark-400 font-bold uppercase tracking-widest pl-1">
-                                    <kbd className="bg-dark-700/50 px-1.5 py-0.5 rounded border border-dark-600">/</kbd>
-                                    <span>Focus</span>
-                                </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
 
                         <button
                             type="submit"

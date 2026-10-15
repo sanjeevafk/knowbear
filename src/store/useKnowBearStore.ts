@@ -13,7 +13,6 @@ interface KnowBearState {
     error: string | null
     fetchingLevels: Set<Level>
     failedLevels: Set<Level>
-    isSidebarOpen: boolean
     activeTopic: string
     activeImage: string | null
     loadingMeta: { level: Level; topic: string } | null
@@ -30,7 +29,6 @@ interface KnowBearState {
     setError: (error: string | null) => void
     setFetchingLevels: (levels: Set<Level>) => void
     setFailedLevels: (levels: Set<Level>) => void
-    setIsSidebarOpen: (open: boolean) => void
     setActiveTopic: (topic: string) => void
     setActiveImage: (image: string | null) => void
     setLoadingMeta: (meta: { level: Level; topic: string } | null) => void
@@ -52,7 +50,6 @@ const initialState = {
     error: null,
     fetchingLevels: new Set<Level>(),
     failedLevels: new Set<Level>(),
-    isSidebarOpen: true,
     activeTopic: '',
     activeImage: null as string | null,
     loadingMeta: null,
@@ -75,7 +72,6 @@ export const useKnowBearStore = create<KnowBearState>()(
             setError: (error) => set({ error }),
             setFetchingLevels: (fetchingLevels) => set({ fetchingLevels }),
             setFailedLevels: (failedLevels) => set({ failedLevels }),
-            setIsSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
             setActiveTopic: (activeTopic) => set({ activeTopic }),
             setActiveImage: (activeImage) => set({ activeImage }),
             setLoadingMeta: (loadingMeta) => set({ loadingMeta }),
@@ -262,7 +258,6 @@ export const useKnowBearStore = create<KnowBearState>()(
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 selectedLevel: state.selectedLevel,
-                isSidebarOpen: state.isSidebarOpen,
                 favoriteTopics: state.favoriteTopics,
             }),
             merge: (persistedState, currentState) => {

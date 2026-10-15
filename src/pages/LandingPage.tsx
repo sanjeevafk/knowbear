@@ -1,15 +1,16 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { PinnedTopic } from '../types'
+import { KnowBearPose } from '../components/KnowBearPose'
 
 export default function LandingPage() {
     const navigate = useNavigate()
 
     const curatedPinned: PinnedTopic[] = useMemo(
         () => [
-            { id: 'tcp-ip', title: 'TCP/IP Layers', description: 'Protocols and responsibilities by layer.' },
-            { id: 'osi', title: 'OSI Model', description: 'A clean reference for network fundamentals.' },
-            { id: 'linux-windows', title: 'Linux vs Windows for Dev', description: 'Tradeoffs for daily development.' },
+            { id: 'black-holes', title: 'How Black Holes Work', description: 'Event horizons, spacetime warping, and singularities.' },
+            { id: 'sleep', title: 'Why We Need Sleep', description: 'Brain restoration, memory consolidation, and circadian rhythms.' },
+            { id: 'inflation', title: 'How Inflation Works', description: 'Money supply, purchasing power, and everyday economics.' },
         ],
         []
     )
@@ -18,22 +19,18 @@ export default function LandingPage() {
         <div className="landing-root min-h-screen flex flex-col justify-between">
             <div className="landing-noise" />
 
-            <header className="landing-header">
-                <div className="landing-header-logo">
-                    <img src="/favicon.svg" alt="KnowBear" className="w-5 h-5" />
-                    <span>KnowBear</span>
-                </div>
-            </header>
+            <header className="landing-header" />
 
             <main className="landing-main max-w-4xl text-center items-center py-12 flex flex-col justify-center gap-16 flex-1">
-                <div className="space-y-8 flex flex-col items-center text-center max-w-2xl z-10">
-                    <section className="hero p-0 text-center items-center">
+                <div className="space-y-6 flex flex-col items-center text-center max-w-2xl z-10">
+                    <section className="hero p-0 text-center items-center flex flex-col items-center">
+                        <KnowBearPose pose="wave" size="md" floating={true} className="mb-2" />
                         <p className="eyebrow font-mono">Knowledge Engine</p>
                         <h1 className="hero-headline text-center">
                             Complexity,<br />made <em>clear.</em>
                         </h1>
                         <p className="hero-sub text-center mx-auto">
-                            Explain any topic in multiple levels of depth. Harness live web search and multi-model synthesis to bypass the noise.
+                            Explain any topic in multiple levels of depth.
                         </p>
                     </section>
 

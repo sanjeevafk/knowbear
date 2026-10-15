@@ -4,10 +4,20 @@ import type { HTMLAttributes, ImgHTMLAttributes } from 'react'
 import remarkGfm from 'remark-gfm'
 import Mermaid from './Mermaid'
 import SafeImage from './SafeImage'
+import MemeRenderer from './MemeRenderer'
+import { KnowBearAvatar, BearExpression } from './KnowBearAvatar'
+
+const LEVEL_EXPRESSIONS: Record<Level, BearExpression> = {
+    eli5: 'happy',
+    eli12: 'idea',
+    eli15: 'serious',
+    meme: 'meme',
+}
 
 interface ExplanationCardProps {
     level: Level
     content: string
+    topic?: string
     streaming?: boolean
 }
 
@@ -25,15 +35,28 @@ const LEVEL_NAMES: Record<Level, string> = {
     meme: 'Meme Explanation',
 }
 
-export default function ExplanationCard({ level, content, streaming }: ExplanationCardProps) {
+export default function ExplanationCard({ level, content, topic, streaming }: ExplanationCardProps) {
     const borderColor = LEVEL_COLORS[level]
+
+    if (level === 'meme') {
+        return (
+            <div className={`bg-dark-700 border-l-4 ${borderColor} rounded-lg p-6 transition-all shadow-2xl relative`}>
+                <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4 border-b border-white/5 pb-2 flex items-center gap-2.5">
+                    <KnowBearAvatar expression={LEVEL_EXPRESSIONS[level] || 'default'} size="xs" />
+                    <span>{LEVEL_NAMES[level]}</span>
+                </h3>
+                <MemeRenderer content={content} topic={topic} streaming={streaming} />
+            </div>
+        )
+    }
 
     return (
         <div
             className={`bg-dark-700 border-l-4 ${borderColor} rounded-lg p-6 transition-all shadow-2xl relative`}
         >
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4 border-b border-white/5 pb-2 flex flex-wrap items-center gap-2">
-                {LEVEL_NAMES[level]}
+            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4 border-b border-white/5 pb-2 flex items-center gap-2.5">
+                <KnowBearAvatar expression={LEVEL_EXPRESSIONS[level] || 'default'} size="xs" />
+                <span>{LEVEL_NAMES[level]}</span>
             </h3>
 
             <div className="prose prose-invert max-w-none text-gray-200 leading-relaxed prose-headings:text-white prose-a:text-amber-400 hover:prose-a:text-amber-300 prose-code:text-amber-300 prose-img:rounded-xl prose-hr:border-white/5">

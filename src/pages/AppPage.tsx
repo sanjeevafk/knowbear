@@ -7,19 +7,16 @@ import type { Level, PinnedTopic } from '../types'
 import SearchBar from '../components/SearchBar'
 import LevelDropdown from '../components/LevelDropdown'
 import ExplanationCard from '../components/ExplanationCard'
-import Sidebar from '../components/Sidebar'
-import MobileBottomNav from '../components/MobileBottomNav'
-import MobileHeader from '../components/MobileHeader'
+import Navbar from '../components/Navbar'
 import { LoadingState } from '../components/LoadingState'
 import PinnedTopics from '../components/PinnedTopics'
 import { useKnowBearStore } from '../store/useKnowBearStore'
-import ThemeToggle from '../components/ThemeToggle'
 
 const FALLBACK_PINNED_TOPICS: PinnedTopic[] = [
-    { id: 'tcp-ip', title: 'TCP/IP Layers', description: 'Protocols and responsibilities by layer.' },
-    { id: 'osi', title: 'OSI Model', description: 'A clean reference for network fundamentals.' },
-    { id: 'climate-change', title: 'Climate Change', description: 'Causes, impacts, and practical responses.' },
-    { id: 'rag', title: 'How LLM RAG Works', description: 'Retrieval + generation in practice.' },
+    { id: 'black-holes', title: 'How Black Holes Work', description: 'Event horizons, spacetime warping, and singularities.' },
+    { id: 'sleep', title: 'Why We Need Sleep', description: 'Brain restoration, memory consolidation, and circadian rhythms.' },
+    { id: 'inflation', title: 'How Inflation Works', description: 'Money supply, purchasing power, and everyday economics.' },
+    { id: 'vaccines', title: 'How Vaccines Work', description: 'Immune system training, antibodies, and disease prevention.' },
 ]
 
 export default function AppPage() {
@@ -38,8 +35,6 @@ export default function AppPage() {
         streamStatus,
         lastFailedRequest,
         pinnedTopics,
-        isSidebarOpen,
-        favoriteTopics,
     } = useKnowBearStore(useShallow((state) => ({
         loading: state.loading,
         result: state.result,
@@ -53,8 +48,6 @@ export default function AppPage() {
         streamStatus: state.streamStatus,
         lastFailedRequest: state.lastFailedRequest,
         pinnedTopics: state.pinnedTopics,
-        isSidebarOpen: state.isSidebarOpen,
-        favoriteTopics: state.favoriteTopics,
     })))
 
     const {
@@ -63,16 +56,14 @@ export default function AppPage() {
         fetchLevel,
         retryLastFailed,
         fetchPinnedTopics,
-        setIsSidebarOpen,
-        toggleFavoriteTopic,
+        reset,
     } = useKnowBearStore(useShallow((state) => ({
         setSelectedLevel: state.setSelectedLevel,
         startSearch: state.startSearch,
         fetchLevel: state.fetchLevel,
         retryLastFailed: state.retryLastFailed,
         fetchPinnedTopics: state.fetchPinnedTopics,
-        setIsSidebarOpen: state.setIsSidebarOpen,
-        toggleFavoriteTopic: state.toggleFavoriteTopic,
+        reset: state.reset,
     })))
 
     const handleSearch = useCallback(
@@ -143,43 +134,20 @@ export default function AppPage() {
     const visiblePinnedTopics = pinnedTopics.length > 0 ? pinnedTopics : FALLBACK_PINNED_TOPICS
 
     return (
-        <div className="flex h-screen bg-dark-900 text-white overflow-hidden">
-            <Sidebar
-                isOpen={isSidebarOpen}
-                onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-                onSelectTopic={(topic) => handleSearch(topic, false)}
-                favoriteTopics={favoriteTopics}
-                onToggleFavorite={toggleFavoriteTopic}
-            />
+        <div className="min-h-screen bg-dark-900 text-white flex flex-col">
+            <Navbar onNewSearch={reset} />
 
-            <main className={`flex-grow flex flex-col overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'md:pl-64' : 'md:pl-16'}`}>
-                <MobileHeader isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
-
-                {/* Top Action Bar for Desktop */}
-                <div className="hidden md:flex items-center justify-between px-8 py-3 border-b border-dark-700 bg-dark-900/40 backdrop-blur-md select-none shrink-0">
-                    <div>
-                        {!result && (
-                            <span className="text-xs font-semibold uppercase tracking-widest text-gray-500 font-mono">
-                                Workspace
-                            </span>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <ThemeToggle />
-                    </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto">
-                    <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 pt-10 pb-6 sm:pt-12 sm:pb-8 space-y-4 sm:space-y-6">
-                        {/* Render SearchBar at top ONLY if result is present or loading */}
-                        {(result || loading) && (
-                            <div className="space-y-4 pt-2 sm:pt-3">
-                                <SearchBar
-                                    onSearch={(topic, image) => handleSearch(topic, false, undefined, image)}
-                                    loading={loading}
-                                    value={activeTopic}
-                                    initialImage={activeImage}
-                                />
+            <main className="flex-1 overflow-y-auto">
+                <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 pb-12 sm:pt-8 sm:pb-16 space-y-4 sm:space-y-6">
+                    {/* Render SearchBar at top ONLY if result is present or loading */}
+                    {(result || loading) && (
+                        <div className="space-y-4 pt-2 sm:pt-3">
+                            <SearchBar
+                                onSearch={(topic, image) => handleSearch(topic, false, undefined, image)}
+                                loading={loading}
+                                value={activeTopic}
+                                initialImage={activeImage}
+                            />
 
                                 {error && (
                                     <motion.div
@@ -293,6 +261,7 @@ export default function AppPage() {
                                     <ExplanationCard
                                         level={selectedLevel}
                                         content={result.explanations[selectedLevel] || ''}
+                                        topic={activeTopic || result.topic}
                                         streaming={fetchingLevels.has(selectedLevel)}
                                     />
                                 </motion.section>
@@ -311,8 +280,8 @@ export default function AppPage() {
                                         <h2 className="text-3xl font-extrabold tracking-tight text-white mt-2">
                                             What passes for knowledge...?
                                         </h2>
-                                        <p className="text-gray-500 max-w-md text-sm sm:text-base leading-relaxed">
-                                            Search for any concept, system, or protocol to generate clear, multi-level syntheses.
+                                        <p className="text-gray-400 max-w-md text-sm sm:text-base leading-relaxed">
+                                            Understand anything, simply.
                                         </p>
                                     </div>
 
@@ -329,15 +298,6 @@ export default function AppPage() {
                             )}
                         </AnimatePresence>
                     </div>
-                </div>
-
-                <MobileBottomNav
-                    onRegenerate={handleRegenerateSelectedLevel}
-                    loading={loading}
-                    hasResult={!!result}
-                    isSidebarOpen={isSidebarOpen}
-                    onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-                />
             </main>
         </div>
     )

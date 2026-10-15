@@ -20,16 +20,8 @@ vi.mock('../components/ExplanationCard', () => ({
     default: ({ content }: { content: string }) => <div data-testid="explanation-card">{content}</div>,
 }))
 
-vi.mock('../components/Sidebar', () => ({
-    default: () => <div data-testid="sidebar">Sidebar</div>,
-}))
-
-vi.mock('../components/MobileHeader', () => ({
-    default: () => <div data-testid="mobile-header">Mobile Header</div>,
-}))
-
-vi.mock('../components/MobileBottomNav', () => ({
-    default: () => <div data-testid="mobile-nav">Mobile Nav</div>,
+vi.mock('../components/Navbar', () => ({
+    default: () => <div data-testid="navbar">Navbar</div>,
 }))
 
 vi.mock('../components/LoadingState', () => ({
@@ -49,6 +41,7 @@ describe('AppPage', () => {
             </BrowserRouter>
         )
 
+        expect(screen.getByTestId('navbar')).toBeInTheDocument()
         expect(screen.getByTestId('search-bar')).toBeInTheDocument()
         expect(screen.getByText('What passes for knowledge...?')).toBeInTheDocument()
     })

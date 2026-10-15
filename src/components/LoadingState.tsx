@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import type { Level } from '../types'
-import { Loader2, Quote } from 'lucide-react'
+import { Quote } from 'lucide-react'
+import { KnowBearAvatar } from './KnowBearAvatar'
 
 interface LoadingStateProps {
     mode?: string
@@ -62,9 +63,9 @@ export const LoadingState: React.FC<LoadingStateProps> = ({ level, topic }) => {
 
     return (
         <div className="flex flex-col items-center justify-center p-12 min-h-[400px] animate-in fade-in duration-700">
-            <div className="relative mb-8">
+            <div className="relative mb-6">
                 <div className="absolute inset-0 bg-amber-500/20 blur-3xl rounded-full scale-150 animate-pulse"></div>
-                <Loader2 className="w-16 h-16 text-amber-500 animate-spin relative z-10" />
+                <KnowBearAvatar expression="loading" size="2xl" pulse={true} className="relative z-10" />
             </div>
 
             <div className="text-center space-y-6 max-w-lg">
