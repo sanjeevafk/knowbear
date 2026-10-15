@@ -47,7 +47,8 @@ PINNED_TOPICS = [
         500: {"model": ErrorResponse, "description": "Internal server error"}
     }
 )
-async def get_pinned(response: Response) -> list[PinnedTopic]:
+async def get_pinned(response: Response = Response()) -> list[PinnedTopic]:
     """Return curated pinned topics."""
     response.headers["Cache-Control"] = "public, max-age=86400, stale-while-revalidate=604800"
     return PINNED_TOPICS
+

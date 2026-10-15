@@ -1,15 +1,41 @@
 """Model provider abstraction."""
 
+import base64
 import os
 import re
 import time
 
 from groq import AsyncGroq
 from google import genai
+from google.genai import types
 
 from config import get_settings
 from logging_config import logger
 from token_rate_limit import TokenRateLimitExceeded, consume_tokens, estimate_tokens
+
+DEFAULT_GEMINI_MODEL = "gemini-3-flash-preview"
+
+
+def _prepare_image_part(image_data: str | bytes) -> types.Part | None:
+    """Convert base64 data URL, raw base64 string, or bytes to google-genai Part."""
+    if isinstance(image_data, bytes):
+        return types.Part.from_bytes(data=image_data, mime_type="image/png")
+    if isinstance(image_data, str) and image_data.strip():
+        s = image_data.strip()
+        if "," in s:
+            header, b64_str = s.split(",", 1)
+            mime = header.split(";")[0].replace("data:", "").strip() or "image/png"
+        else:
+            mime = "image/png"
+            b64_str = s
+        try:
+            data_bytes = base64.b64decode(b64_str)
+            return types.Part.from_bytes(data=data_bytes, mime_type=mime)
+        except Exception as e:
+            logger.warning("invalid_image_base64", error=str(e))
+            return None
+    return None
+
 
 class ModelError(Exception):
     """Base model error."""
@@ -22,6 +48,7 @@ class RequiresPro(ModelError):
 class ModelUnavailable(ModelError):
     """Raised when a model is not configured or fails."""
     pass
+
 
 class ModelProvider:
     """Singleton for managing model clients."""
@@ -92,18 +119,20 @@ class ModelProvider:
             if not self.gemini_configured:
                 raise ModelUnavailable("Gemini is not configured for heavy/visual tasks.")
             
-            model_name = "gemini-2.0-flash"
+            model_name = DEFAULT_GEMINI_MODEL
 
             try:
                 contents = [prompt]
                 if image_data:
-                    contents.append(image_data)
+                    img_part = _prepare_image_part(image_data)
+                    if img_part:
+                        contents.append(img_part)
                     
                 # Using a timeout if supported by the client, or external wrap
                 response = await self.gemini_client.aio.models.generate_content(
                     model=model_name,
                     contents=contents,
-                    config={"http_options": {"timeout": 30000}},  # 30s for genai client
+                    config={"http_options": {"timeout": 45000}},  # 45s for vision/genai client
                 )
                 await consume_tokens(client_ip, estimate_tokens(response.text or ""))
                 return {"provider": "google", "model": model_name, "content": response.text}
@@ -119,7 +148,7 @@ class ModelProvider:
         req_model = kwargs.get("model")
         if req_model:
             if req_model == "gemini":
-                return await self._call_gemini_direct(prompt, model_name="gemini-2.0-flash", **kwargs)
+                return await self._call_gemini_direct(prompt, model_name=DEFAULT_GEMINI_MODEL, **kwargs)
             elif isinstance(req_model, str) and req_model.startswith("gemini-"):
                 return await self._call_gemini_direct(prompt, model_name=req_model, **kwargs)
             elif req_model in [
@@ -176,6 +205,42 @@ class ModelProvider:
         """Stream inference results for real-time UI."""
         client_ip = kwargs.get("client_ip", "unknown")
         await consume_tokens(client_ip, estimate_tokens(prompt))
+
+        # Check if visual inference is requested
+        image_data = kwargs.get("image_data")
+        if image_data:
+            if not self.gemini_configured:
+                raise ModelUnavailable("Gemini is not configured for visual tasks.")
+            model_name = DEFAULT_GEMINI_MODEL
+            try:
+                contents = [prompt]
+                img_part = _prepare_image_part(image_data)
+                if img_part:
+                    contents.append(img_part)
+
+                started = time.perf_counter()
+                stream = await self.gemini_client.aio.models.generate_content_stream(
+                    model=model_name,
+                    contents=contents,
+                )
+                billable_tokens = 0
+                async for chunk in stream:
+                    content = chunk.text or ""
+                    if content:
+                        billable_tokens += estimate_tokens(content)
+                        yield content
+                if billable_tokens > 0:
+                    await consume_tokens(client_ip, billable_tokens)
+                logger.info(
+                    "stream_gemini_vision_completed",
+                    model=model_name,
+                    latency_ms=int((time.perf_counter() - started) * 1000),
+                )
+                return
+            except Exception as e:
+                logger.error("gemini_vision_stream_failed", error=str(e))
+                raise ModelError(f"Gemini streaming failed: {e}")
+
         target_model = "openai/gpt-oss-20b"
         max_tokens = 1200
 
@@ -255,7 +320,7 @@ class ModelProvider:
             raise ModelUnavailable("All providers (Groq, Gemini) failed or configured incorrectly.")
         
         try:
-            model_name = "gemini-2.0-flash"
+            model_name = DEFAULT_GEMINI_MODEL
             response = await self.gemini_client.aio.models.generate_content(
                 model=model_name,
                 contents=prompt,
@@ -270,7 +335,7 @@ class ModelProvider:
         except Exception as e:
             raise ModelError(f"Critical: Fallback Gemini generation failed: {str(e)}")
 
-    async def _call_gemini_direct(self, prompt: str, model_name: str = "gemini-2.0-flash", **kwargs) -> dict:
+    async def _call_gemini_direct(self, prompt: str, model_name: str = DEFAULT_GEMINI_MODEL, **kwargs) -> dict:
         """Legacy direct call."""
         if not self.gemini_configured:
             raise ModelUnavailable("Gemini is not configured.")

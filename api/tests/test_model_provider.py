@@ -8,7 +8,7 @@ async def test_route_inference_fallback(monkeypatch):
     provider = ModelProvider()
     provider.groq_client = None
 
-    async def fake_fallback(_prompt):
+    async def fake_fallback(_prompt, **kwargs):
         return {"provider": "fallback", "model": "x", "content": "fallback"}
 
     monkeypatch.setattr(provider, "_fallback_to_gemini", fake_fallback)
@@ -21,7 +21,7 @@ async def test_route_inference_stream_fallback(monkeypatch):
     provider = ModelProvider()
     provider.groq_client = None
 
-    async def fake_fallback(_prompt):
+    async def fake_fallback(_prompt, **kwargs):
         return {"provider": "fallback", "model": "x", "content": "fallback"}
 
     monkeypatch.setattr(provider, "_fallback_to_gemini", fake_fallback)

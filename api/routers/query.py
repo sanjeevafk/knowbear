@@ -1,12 +1,13 @@
 """Query endpoints for generating explanations."""
 
 import asyncio
+import hashlib
 import json
 import time
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from .schemas import ErrorResponse, RateLimitResponse
 
 from collections.abc import AsyncIterator, Iterator
@@ -29,11 +30,15 @@ _response_cache: dict[str, tuple[float, str]] = {}
 
 class QueryRequest(BaseModel):
     topic: str = Field(
-        ..., 
-        min_length=1, 
+        default="", 
         max_length=2000,
         description="The educational topic, system, or protocol to search and explain.",
         json_schema_extra={"example": "TCP/IP Layers"}
+    )
+    image: str | None = Field(
+        default=None,
+        description="Base64 data URL or raw base64 string of screenshot or diagram image.",
+        json_schema_extra={"example": "data:image/png;base64,iVBORw0..."}
     )
     levels: list[str] = Field(
         default=ALL_LEVELS,
@@ -62,6 +67,16 @@ class QueryRequest(BaseModel):
         description="Forces new search and generation bypassing cached data.",
         json_schema_extra={"example": False}
     )
+
+    @model_validator(mode="after")
+    def validate_topic_or_image(self):
+        topic_clean = (self.topic or "").strip()
+        if not topic_clean and not self.image:
+            raise ValueError("Either a topic or an image must be provided.")
+        if not topic_clean and self.image:
+            self.topic = "Explain this image or diagram"
+        return self
+
 
 
 class QueryResponse(BaseModel):
@@ -108,7 +123,10 @@ def _get_client_ip(request: Request) -> str:
     return "unknown"
 
 
-def _cache_key(topic: str, level: str, mode: str | None = None) -> str:
+def _cache_key(topic: str, level: str, mode: str | None = None, image: str | None = None) -> str:
+    if image:
+        img_hash = hashlib.sha256(image.encode()).hexdigest()[:12]
+        return f"query_cache:{topic.lower()}::{img_hash}::{level}"
     return f"query_cache:{topic.lower()}::{level}"
 
 
@@ -184,14 +202,14 @@ async def query_topic(req: QueryRequest, request: Request) -> QueryResponse:
     logger.info("query_start_generation", topic=topic, levels=levels, mode=req.mode)
     tasks: dict[str, asyncio.Task[str]] = {}
     for level in levels:
-        key = _cache_key(topic, level, req.mode)
+        key = _cache_key(topic, level, req.mode, req.image)
         if not req.regenerate:
             cached = await _cache_get(key)
             if cached:
                 explanations[level] = cached
                 continue
         tasks[level] = asyncio.create_task(
-            ensemble_generate(topic, level, req.mode, client_ip=client_ip)
+            ensemble_generate(topic, level, req.mode, client_ip=client_ip, image_data=req.image)
         )
 
     results = await asyncio.gather(*tasks.values(), return_exceptions=True) if tasks else []
@@ -199,7 +217,7 @@ async def query_topic(req: QueryRequest, request: Request) -> QueryResponse:
         if isinstance(result, str):
             explanations[level] = result
             if not req.regenerate:
-                await _cache_set(_cache_key(topic, level, req.mode), result)
+                await _cache_set(_cache_key(topic, level, req.mode, req.image), result)
         elif isinstance(result, TokenRateLimitExceeded):
             raise HTTPException(
                 status_code=429,
@@ -258,7 +276,7 @@ async def query_topic_stream(req: QueryRequest, request: Request):
         raise HTTPException(400, str(e)) from e
 
     level = req.levels[0] if req.levels and req.levels[0] in ALL_LEVELS else "eli5"
-    cache_key = _cache_key(topic, level, req.mode)
+    cache_key = _cache_key(topic, level, req.mode, req.image)
     if not req.regenerate:
         cached = await _cache_get(cache_key)
         if cached:
@@ -289,6 +307,7 @@ async def query_topic_stream(req: QueryRequest, request: Request):
                 temperature=req.temperature,
                 regenerate=req.regenerate,
                 client_ip=client_ip,
+                image_data=req.image,
             )
             async for chunk in _stream_chunks(stream):
                 full_content += chunk

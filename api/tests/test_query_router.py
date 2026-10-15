@@ -140,3 +140,72 @@ async def test_query_uses_response_cache(app_client, monkeypatch):
     assert first.json()["explanations"]["eli5"] == "cached-result"
     assert second.json()["explanations"]["eli5"] == "cached-result"
     assert calls["count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_query_with_image_input(app_client, monkeypatch):
+    received = {}
+
+    async def fake_ensemble_generate(topic, level, mode=None, client_ip="unknown", image_data=None):
+        received["topic"] = topic
+        received["image_data"] = image_data
+        return "diagram explanation"
+
+    monkeypatch.setattr(query_module, "ensemble_generate", fake_ensemble_generate)
+    sample_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    resp = app_client.post(
+        "/api/query",
+        json={"topic": "Architecture diagram", "image": sample_b64, "levels": ["eli5"]},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["explanations"]["eli5"] == "diagram explanation"
+    assert received["image_data"] == sample_b64
+    assert received["topic"] == "Architecture diagram"
+
+
+@pytest.mark.asyncio
+async def test_query_empty_topic_with_image_defaults_topic(app_client, monkeypatch):
+    received = {}
+
+    async def fake_ensemble_generate(topic, level, mode=None, client_ip="unknown", image_data=None):
+        received["topic"] = topic
+        return "explained"
+
+    monkeypatch.setattr(query_module, "ensemble_generate", fake_ensemble_generate)
+    sample_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    resp = app_client.post(
+        "/api/query",
+        json={"image": sample_b64, "levels": ["eli5"]},
+    )
+    assert resp.status_code == 200
+    assert received["topic"] == "Explain this image or diagram"
+
+
+@pytest.mark.asyncio
+async def test_query_empty_topic_and_no_image_fails(app_client):
+    resp = app_client.post(
+        "/api/query",
+        json={"topic": "", "levels": ["eli5"]},
+    )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_query_stream_with_image(app_client, monkeypatch):
+    received = {}
+
+    async def fake_stream(topic, level, **kwargs):
+        received["image_data"] = kwargs.get("image_data")
+        yield "Streaming vision "
+        yield "complete"
+
+    monkeypatch.setattr(query_module, "generate_stream_explanation", fake_stream)
+    sample_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    resp = app_client.post(
+        "/api/query/stream",
+        json={"image": sample_b64, "levels": ["eli5"]},
+    )
+    assert resp.status_code == 200
+    assert "Streaming vision" in resp.text
+    assert received["image_data"] == sample_b64
+

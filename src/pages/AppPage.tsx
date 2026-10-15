@@ -33,6 +33,7 @@ export default function AppPage() {
         fetchingLevels,
         failedLevels,
         activeTopic,
+        activeImage,
         loadingMeta,
         streamStatus,
         lastFailedRequest,
@@ -47,6 +48,7 @@ export default function AppPage() {
         fetchingLevels: state.fetchingLevels,
         failedLevels: state.failedLevels,
         activeTopic: state.activeTopic,
+        activeImage: state.activeImage,
         loadingMeta: state.loadingMeta,
         streamStatus: state.streamStatus,
         lastFailedRequest: state.lastFailedRequest,
@@ -74,8 +76,8 @@ export default function AppPage() {
     })))
 
     const handleSearch = useCallback(
-        async (topic: string, forceRefresh = false, requestedLevel?: Level) => {
-            await startSearch(topic, forceRefresh, requestedLevel)
+        async (topic: string, forceRefresh = false, requestedLevel?: Level, image?: string | null) => {
+            await startSearch(topic, forceRefresh, requestedLevel, image)
         },
         [startSearch]
     )
@@ -172,7 +174,12 @@ export default function AppPage() {
                         {/* Render SearchBar at top ONLY if result is present or loading */}
                         {(result || loading) && (
                             <div className="space-y-4 pt-2 sm:pt-3">
-                                <SearchBar onSearch={(topic) => handleSearch(topic, false)} loading={loading} value={activeTopic} />
+                                <SearchBar
+                                    onSearch={(topic, image) => handleSearch(topic, false, undefined, image)}
+                                    loading={loading}
+                                    value={activeTopic}
+                                    initialImage={activeImage}
+                                />
 
                                 {error && (
                                     <motion.div
@@ -217,7 +224,26 @@ export default function AppPage() {
                                             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight break-words">
                                                 {result.topic.length > 80 ? 'Explanation for your selection' : result.topic}
                                             </h2>
-                                            {result.topic.length > 80 && (
+                                            {activeImage && (
+                                                <div className="mt-3 p-3 bg-dark-800/80 rounded-xl border border-amber-500/30 flex items-center gap-3.5 max-w-xl shadow-md">
+                                                    <img
+                                                        src={activeImage}
+                                                        alt="Analyzed screenshot or diagram"
+                                                        className="w-16 h-16 rounded-lg object-cover border border-amber-500/40 shadow-sm cursor-pointer hover:opacity-90 transition-opacity shrink-0"
+                                                        onClick={() => window.open(activeImage, '_blank')}
+                                                        title="Click to view full image in new tab"
+                                                    />
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className="text-[10px] uppercase font-bold text-amber-400 tracking-wider block mb-0.5">
+                                                            Analyzed Image / Diagram
+                                                        </span>
+                                                        <p className="text-xs text-gray-300">
+                                                            Visual cognitive synthesis generated from your screenshot.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {result.topic.length > 80 && !activeImage && (
                                                 <div className="mt-3 p-3.5 bg-dark-800/80 rounded-xl border border-dark-600/60 text-sm text-gray-300 leading-relaxed max-w-3xl">
                                                     <span className="text-[10px] uppercase font-bold text-amber-500/80 tracking-wider block mb-1">
                                                         Source Passage
@@ -229,7 +255,7 @@ export default function AppPage() {
                                             )}
                                             <div className="mt-2 flex flex-wrap items-center gap-2">
                                                 <p className="text-sm text-gray-500">
-                                                    Model: <span className="text-amber-400 font-medium">GPT-OSS 20B</span>
+                                                    Model: <span className="text-amber-400 font-medium">{activeImage ? 'Gemini 3 Flash (Vision)' : 'GPT-OSS 20B'}</span>
                                                 </p>
                                                 {streamBadge && (
                                                     <span className={`text-[11px] px-2 py-0.5 rounded-full border ${streamBadge.className}`}>
@@ -291,7 +317,7 @@ export default function AppPage() {
                                     </div>
 
                                     <div className="w-full">
-                                        <SearchBar onSearch={(topic) => handleSearch(topic, false)} loading={loading} />
+                                        <SearchBar onSearch={(topic, image) => handleSearch(topic, false, undefined, image)} loading={loading} />
                                     </div>
 
                                     {visiblePinnedTopics.length > 0 && (

@@ -15,6 +15,7 @@ interface KnowBearState {
     failedLevels: Set<Level>
     isSidebarOpen: boolean
     activeTopic: string
+    activeImage: string | null
     loadingMeta: { level: Level; topic: string } | null
     abortController: AbortController | null
     pinnedTopics: PinnedTopic[]
@@ -31,13 +32,14 @@ interface KnowBearState {
     setFailedLevels: (levels: Set<Level>) => void
     setIsSidebarOpen: (open: boolean) => void
     setActiveTopic: (topic: string) => void
+    setActiveImage: (image: string | null) => void
     setLoadingMeta: (meta: { level: Level; topic: string } | null) => void
     setStreamStatus: (status: StreamStatus) => void
     toggleFavoriteTopic: (topic: string) => void
     fetchPinnedTopics: () => Promise<void>
     retryLastFailed: () => Promise<void>
 
-    startSearch: (topic: string, forceRefresh?: boolean, requestedLevel?: Level) => Promise<void>
+    startSearch: (topic: string, forceRefresh?: boolean, requestedLevel?: Level, image?: string | null) => Promise<void>
     fetchLevel: (topic: string, level: Level, options?: { temperature?: number; regenerate?: boolean }) => Promise<void>
     abortCurrentStream: () => void
     reset: () => void
@@ -52,6 +54,7 @@ const initialState = {
     failedLevels: new Set<Level>(),
     isSidebarOpen: true,
     activeTopic: '',
+    activeImage: null as string | null,
     loadingMeta: null,
     abortController: null,
     pinnedTopics: [],
@@ -74,6 +77,7 @@ export const useKnowBearStore = create<KnowBearState>()(
             setFailedLevels: (failedLevels) => set({ failedLevels }),
             setIsSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
             setActiveTopic: (activeTopic) => set({ activeTopic }),
+            setActiveImage: (activeImage) => set({ activeImage }),
             setLoadingMeta: (loadingMeta) => set({ loadingMeta }),
             setStreamStatus: (streamStatus) => set({ streamStatus }),
             toggleFavoriteTopic: (topic) => {
@@ -122,6 +126,7 @@ export const useKnowBearStore = create<KnowBearState>()(
                     await queryTopicStream(
                         {
                             topic,
+                            image: state.activeImage || undefined,
                             levels: [level],
                             temperature: options?.temperature,
                             regenerate: options?.regenerate || false,
@@ -183,10 +188,12 @@ export const useKnowBearStore = create<KnowBearState>()(
                 }
             },
 
-            startSearch: async (topic: string, forceRefresh = false, requestedLevel?: Level) => {
-                if (!topic.trim()) return
-
+            startSearch: async (topic: string, forceRefresh = false, requestedLevel?: Level, image?: string | null) => {
                 const state = get()
+                const nextImage = image !== undefined ? image : (forceRefresh ? state.activeImage : null)
+                const effectiveTopic = topic.trim() || (nextImage ? 'Explain this image or diagram' : '')
+                if (!effectiveTopic && !nextImage) return
+
                 state.abortCurrentStream()
 
                 const activeLevel = requestedLevel || state.selectedLevel
@@ -198,8 +205,9 @@ export const useKnowBearStore = create<KnowBearState>()(
                 if (requestedLevel && requestedLevel !== state.selectedLevel) set({ selectedLevel: activeLevel })
 
                 set({
-                    activeTopic: topic,
-                    loadingMeta: { level: activeLevel, topic },
+                    activeTopic: effectiveTopic,
+                    activeImage: nextImage,
+                    loadingMeta: { level: activeLevel, topic: effectiveTopic },
                     loading: true,
                     error: null,
                     streamStatus: 'idle',
@@ -216,14 +224,14 @@ export const useKnowBearStore = create<KnowBearState>()(
                         })
                     } else {
                         set({
-                            result: { topic, explanations: {} },
+                            result: { topic: effectiveTopic, explanations: {} },
                         })
                     }
 
                     const randomTemp = Math.random() * (1.1 - 0.95) + 0.95
                     set({ fetchingLevels: new Set(), failedLevels: new Set() })
 
-                    await get().fetchLevel(topic, activeLevel, {
+                    await get().fetchLevel(effectiveTopic, activeLevel, {
                         temperature: randomTemp,
                         regenerate: true,
                     })
@@ -232,19 +240,19 @@ export const useKnowBearStore = create<KnowBearState>()(
                 }
 
                 set({
-                    result: { topic, explanations: {} },
+                    result: { topic: effectiveTopic, explanations: {} },
                     fetchingLevels: new Set(),
                     failedLevels: new Set(),
                 })
 
-                await get().fetchLevel(topic, activeLevel)
+                await get().fetchLevel(effectiveTopic, activeLevel)
                 set({ loading: false, loadingMeta: null })
             },
 
             retryLastFailed: async () => {
                 const failed = get().lastFailedRequest
                 if (!failed) return
-                await get().startSearch(failed.topic, true, failed.level)
+                await get().startSearch(failed.topic, true, failed.level, get().activeImage)
             },
 
             reset: () => set({ ...initialState }),
