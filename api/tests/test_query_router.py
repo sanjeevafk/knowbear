@@ -36,6 +36,27 @@ async def test_query_allows_common_real_world_punctuation(app_client, monkeypatc
 
 
 @pytest.mark.asyncio
+async def test_query_allows_pasted_multiline_block(app_client, monkeypatch):
+    async def fake_ensemble_generate(*_args, **_kwargs):
+        return "generated"
+
+    monkeypatch.setattr(query_module, "ensemble_generate", fake_ensemble_generate)
+    passage = (
+        "Unlike copilot-style assistants that wait for instructions, "
+        "AI agents can break down complex tasks, reason about steps, and execute them autonomously using the right tools.\n\n"
+        "This shift could fundamentally change how people work, from software development to research to everyday productivity. "
+        "Key concepts: {autonomy, tools, planning} — 2026."
+    )
+    resp = app_client.post(
+        "/api/query",
+        json={"topic": passage, "levels": ["eli12"], "mode": "fast"},
+    )
+    assert resp.status_code == 200
+    assert "eli12" in resp.json()["explanations"]
+
+
+
+@pytest.mark.asyncio
 async def test_query_supports_all_levels(app_client, monkeypatch):
     async def fake_ensemble_generate(_topic, _level, *_args, **_kwargs):
         return "ok"

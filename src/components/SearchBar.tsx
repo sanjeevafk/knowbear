@@ -29,13 +29,21 @@ export default function SearchBar({ onSearch, loading, value = '' }: SearchBarPr
         window.addEventListener('resize', updatePlaceholder)
         return () => window.removeEventListener('resize', updatePlaceholder)
     }, [])
-    const inputRef = useRef<HTMLInputElement>(null)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+    useEffect(() => {
+        const textarea = textareaRef.current
+        if (textarea) {
+            textarea.style.height = 'auto'
+            textarea.style.height = `${Math.min(Math.max(textarea.scrollHeight, 48), 160)}px`
+        }
+    }, [topic])
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === '/' && !isFocused) {
+            if (e.key === '/' && !isFocused && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
                 e.preventDefault()
-                inputRef.current?.focus()
+                textareaRef.current?.focus()
             }
         }
         window.addEventListener('keydown', handleKeyDown)
@@ -45,7 +53,14 @@ export default function SearchBar({ onSearch, loading, value = '' }: SearchBarPr
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         if (topic.trim() && !loading) {
-            onSearch(topic)
+            onSearch(topic.trim())
+        }
+    }
+
+    const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            handleSubmit(e)
         }
     }
 
@@ -53,24 +68,32 @@ export default function SearchBar({ onSearch, loading, value = '' }: SearchBarPr
         <div className="w-full max-w-3xl mx-auto space-y-4">
             <form onSubmit={handleSubmit} className="relative group z-20">
                 <div className="relative flex flex-wrap items-center bg-dark-800 border border-dark-600 rounded-2xl p-2 transition-all shadow-xl group-hover:border-dark-500">
-                    <Search className={`ml-3 w-5 h-5 transition-colors ${isFocused ? 'text-amber-500' : 'text-gray-500'}`} />
-                    <input
-                        ref={inputRef}
-                        type="text"
+                    <Search className={`ml-3 w-5 h-5 transition-colors self-center ${isFocused ? 'text-amber-500' : 'text-gray-500'}`} />
+                    <textarea
+                        ref={textareaRef}
+                        rows={1}
                         value={topic}
+                        maxLength={2000}
                         onChange={(e) => setTopic(e.target.value)}
+                        onKeyDown={handleTextareaKeyDown}
                         onFocus={() => setIsFocused(true)}
                         onBlur={() => setIsFocused(false)}
                         placeholder={placeholder}
-                        className="flex-1 min-w-0 bg-transparent text-white placeholder-gray-500 px-4 py-3 outline-none text-base md:text-lg"
+                        className="flex-1 min-w-0 bg-transparent text-white placeholder-gray-500 px-4 py-2.5 outline-none text-base md:text-lg resize-none overflow-y-auto leading-relaxed"
                         disabled={loading}
                     />
 
                     <div className="hidden md:flex items-center gap-3 mr-2">
-                        <div className="flex items-center gap-2 text-[10px] text-dark-400 font-bold uppercase tracking-widest pl-2">
-                            <kbd className="bg-dark-700/50 px-1.5 py-0.5 rounded border border-dark-600">/</kbd>
-                            <span>Focus</span>
-                        </div>
+                        {topic.length > 80 ? (
+                            <span className="text-[11px] font-mono text-gray-500">
+                                {topic.length}/2000
+                            </span>
+                        ) : (
+                            <div className="flex items-center gap-2 text-[10px] text-dark-400 font-bold uppercase tracking-widest pl-2">
+                                <kbd className="bg-dark-700/50 px-1.5 py-0.5 rounded border border-dark-600">/</kbd>
+                                <span>Focus</span>
+                            </div>
+                        )}
                     </div>
 
                     <button

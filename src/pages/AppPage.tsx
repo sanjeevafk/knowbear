@@ -214,8 +214,20 @@ export default function AppPage() {
                                 >
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                         <div>
-                                            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight break-words">{result.topic}</h2>
-                                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                                            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight break-words">
+                                                {result.topic.length > 80 ? 'Explanation for your selection' : result.topic}
+                                            </h2>
+                                            {result.topic.length > 80 && (
+                                                <div className="mt-3 p-3.5 bg-dark-800/80 rounded-xl border border-dark-600/60 text-sm text-gray-300 leading-relaxed max-w-3xl">
+                                                    <span className="text-[10px] uppercase font-bold text-amber-500/80 tracking-wider block mb-1">
+                                                        Source Passage
+                                                    </span>
+                                                    <p className="line-clamp-4 hover:line-clamp-none transition-all cursor-pointer italic text-xs sm:text-sm text-gray-300/90">
+                                                        "{result.topic}"
+                                                    </p>
+                                                </div>
+                                            )}
+                                            <div className="mt-2 flex flex-wrap items-center gap-2">
                                                 <p className="text-sm text-gray-500">
                                                     Model: <span className="text-amber-400 font-medium">GPT-OSS 20B</span>
                                                 </p>

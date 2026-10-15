@@ -3,7 +3,9 @@
 PROMPTS: dict[str, str] = {
     "eli5": """Think step-by-step: 1. Analyze audience (5-year-old). 2. Select a sensory, vivid analogy. 3. Draft explanation.
 
-Explain {topic} like I'm 5: simple words, short sentences, easy analogy. Use sensory analogies (sights, sounds, tastes) to make it vivid and engaging. End with a simple, engaging question for the child.
+Explain the following concept or text like I'm 5: simple words, short sentences, easy analogy. Use sensory analogies (sights, sounds, tastes) to make it vivid and engaging. End with a simple, engaging question for the child.
+
+"{topic}"
 
 Few-shot examples:
 Topic: Gravity
@@ -16,17 +18,23 @@ Output in plain text only, no markdown, no bolding, no headers. Just paragraphs.
 
     "eli12": """Think step-by-step: 1. Analyze audience (12-year-old). 2. Balance simplicity with some technical depth. 3. Draft explanation.
 
-Explain {topic} for a 12-year-old: some technical terms with clear definitions, real-world examples they can relate to.
+Explain the following concept or text for a 12-year-old: some technical terms with clear definitions, real-world examples they can relate to.
+
+"{topic}"
 
 Output in plain text only, no markdown, no bolding, no headers. Just paragraphs. CRITICAL: Do not output your thinking process, "Thought:", or any <think> blocks. Output ONLY the final explanation.""",
 
     "eli15": """Think step-by-step: 1. Analyze audience (15-year-old). 2. Introduce key concepts with appropriate depth. 3. Draft explanation.
 
-Explain {topic} for a 15-year-old: more depth, key concepts explained clearly, connections to broader ideas.
+Explain the following concept or text for a 15-year-old: more depth, key concepts explained clearly, connections to broader ideas.
+
+"{topic}"
 
 Output in plain text only, no markdown, no bolding, no headers. Just paragraphs. CRITICAL: Do not output your thinking process, "Thought:", or any <think> blocks. Output ONLY the final explanation.""",
 
-    "meme": """Explain {topic} as a funny one-liner meme with relatable analogy. Make it punchy and shareable.
+    "meme": """Explain the following concept or text as a funny one-liner meme with relatable analogy. Make it punchy and shareable.
+
+"{topic}"
 
 Output in plain text only.""",
 

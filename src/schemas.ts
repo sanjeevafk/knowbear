@@ -5,7 +5,7 @@ export const streamStatusSchema = z.enum(['idle', 'live', 'fallback', 'degraded'
 export const levelSchema = z.enum(['eli5', 'eli12', 'eli15', 'meme'])
 
 export const queryRequestSchema = z.object({
-    topic: z.string().min(1),
+    topic: z.string().min(1).max(2000),
     levels: z.array(levelSchema).optional(),
     mode: modeSchema.optional(),
     temperature: z.number().optional(),

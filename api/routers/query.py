@@ -31,7 +31,7 @@ class QueryRequest(BaseModel):
     topic: str = Field(
         ..., 
         min_length=1, 
-        max_length=200,
+        max_length=2000,
         description="The educational topic, system, or protocol to search and explain.",
         json_schema_extra={"example": "TCP/IP Layers"}
     )
