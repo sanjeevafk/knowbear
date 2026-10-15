@@ -1,9 +1,12 @@
-"""Configuration and environment variables."""
-
+import os
 import sys
 from functools import lru_cache
-
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+
+# Load project .env with override=True so .env takes precedence over shell env
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"), override=True)
+load_dotenv(".env", override=True)
 
 
 class Settings(BaseSettings):

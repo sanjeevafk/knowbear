@@ -1,5 +1,6 @@
 """Model provider abstraction."""
 
+import os
 import re
 import time
 
@@ -43,7 +44,13 @@ class ModelProvider:
 
         if self.settings.groq_api_key:
             try:
-                self.groq_client = AsyncGroq(api_key=self.settings.groq_api_key)
+                base_url = os.getenv("GROQ_BASE_URL")
+                if base_url and "/openai/v1" in base_url:
+                    base_url = base_url.replace("/openai/v1", "").rstrip("/")
+                groq_kwargs = {"api_key": self.settings.groq_api_key}
+                if base_url:
+                    groq_kwargs["base_url"] = base_url
+                self.groq_client = AsyncGroq(**groq_kwargs)
             except Exception as e:
                 logger.error("groq_init_failed", error=str(e))
         

@@ -65,7 +65,7 @@ async def generate_explanation(topic: str, level: str, model: str = "openai/gpt-
     if not template:
         raise ValueError(f"Unknown level: {level}")
 
-    prompt = template.format(topic=topic)
+    prompt = template.replace("{topic}", topic)
     return await call_model(model, prompt, **kwargs)
 
 
@@ -76,7 +76,7 @@ async def generate_stream_explanation(topic: str, level: str, **kwargs):
     template = PROMPTS.get(level)
     if not template:
         raise ValueError(f"Unknown level: {level}")
-    prompt = template.format(topic=topic)
+    prompt = template.replace("{topic}", topic)
 
     provider = ModelProvider.get_instance()
     async for chunk in provider.route_inference_stream(prompt, **kwargs):
