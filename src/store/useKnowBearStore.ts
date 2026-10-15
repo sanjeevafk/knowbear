@@ -1,9 +1,8 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { QueryResponse, Level, PinnedTopic, StreamStatus } from '../types'
-import { queryTopicStream } from '../api'
+import { getPinnedTopics, queryTopicStream } from '../api'
 
-const MAX_TOPIC_HISTORY = 12
 const STORE_KEY = 'knowbear-store'
 
 interface KnowBearState {
@@ -20,7 +19,6 @@ interface KnowBearState {
     pinnedTopics: PinnedTopic[]
     pinnedTopicsLoaded: boolean
     streamStatus: StreamStatus
-    favoriteTopics: string[]
     lastFailedRequest: { topic: string; level: Level } | null
 
     setLoading: (loading: boolean) => void
@@ -33,7 +31,6 @@ interface KnowBearState {
     setActiveImage: (image: string | null) => void
     setLoadingMeta: (meta: { level: Level; topic: string } | null) => void
     setStreamStatus: (status: StreamStatus) => void
-    toggleFavoriteTopic: (topic: string) => void
     fetchPinnedTopics: () => Promise<void>
     retryLastFailed: () => Promise<void>
 
@@ -57,7 +54,6 @@ const initialState = {
     pinnedTopics: [],
     pinnedTopicsLoaded: false,
     streamStatus: 'idle' as StreamStatus,
-    favoriteTopics: [],
     lastFailedRequest: null,
 }
 
@@ -76,16 +72,6 @@ export const useKnowBearStore = create<KnowBearState>()(
             setActiveImage: (activeImage) => set({ activeImage }),
             setLoadingMeta: (loadingMeta) => set({ loadingMeta }),
             setStreamStatus: (streamStatus) => set({ streamStatus }),
-            toggleFavoriteTopic: (topic) => {
-                const cleanTopic = topic.trim()
-                if (!cleanTopic) return
-                const current = get().favoriteTopics
-                const exists = current.some((item) => item.toLowerCase() === cleanTopic.toLowerCase())
-                const next = exists
-                    ? current.filter((item) => item.toLowerCase() !== cleanTopic.toLowerCase())
-                    : [cleanTopic, ...current].slice(0, MAX_TOPIC_HISTORY)
-                set({ favoriteTopics: next })
-            },
 
             abortCurrentStream: () => {
                 const { abortController } = get()
@@ -97,7 +83,6 @@ export const useKnowBearStore = create<KnowBearState>()(
             fetchPinnedTopics: async () => {
                 if (get().pinnedTopicsLoaded) return
                 try {
-                    const { getPinnedTopics } = await import('../api')
                     const topics = await getPinnedTopics()
                     set({ pinnedTopics: topics, pinnedTopicsLoaded: true })
                 } catch (err) {
@@ -258,20 +243,7 @@ export const useKnowBearStore = create<KnowBearState>()(
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 selectedLevel: state.selectedLevel,
-                favoriteTopics: state.favoriteTopics,
             }),
-            merge: (persistedState, currentState) => {
-                const persisted = (persistedState ?? {}) as Partial<KnowBearState>
-                const safeFavorites = Array.isArray(persisted.favoriteTopics)
-                    ? persisted.favoriteTopics.filter((item): item is string => typeof item === 'string')
-                    : currentState.favoriteTopics
-
-                return {
-                    ...currentState,
-                    ...persisted,
-                    favoriteTopics: safeFavorites,
-                }
-            },
         }
     )
 )

@@ -126,10 +126,6 @@ export async function getPinnedTopics(): Promise<PinnedTopic[]> {
     return parsed.data
 }
 
-export async function queryTopic(req: QueryRequest): Promise<QueryResponse> {
-    return queryTopicWithTimeout(req, 45000)
-}
-
 async function queryTopicWithTimeout(req: QueryRequest, timeoutMs: number): Promise<QueryResponse> {
     const request = queryRequestSchema.safeParse(req)
     if (!request.success) throw formatValidationError('Invalid query request', request.error)
@@ -159,9 +155,6 @@ export async function queryTopicStream(
         'Content-Type': 'application/json',
         'X-Request-ID': createRequestId(),
     }
-
-    let retries = 0
-    const maxRetries = 0
 
     const fallbackToNonStream = async (reason: string): Promise<void> => {
         try {
@@ -294,12 +287,6 @@ export async function queryTopicStream(
                 } catch {
                     // continue to retry/error flow
                 }
-            }
-
-            if (retries < maxRetries && !signal?.aborted) {
-                retries++
-                await new Promise(r => setTimeout(r, 1000 * retries))
-                return attemptStream()
             }
 
             await fallbackToNonStream(err instanceof Error ? err.message : 'Stream failed')

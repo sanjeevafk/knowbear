@@ -26,11 +26,6 @@ def get_regeneration_quote() -> str:
     return f"---\n*\"{quote['content']}\"* — {quote['author']}"
 
 
-async def close_client():
-    """No-op as ModelProvider manages its own clients."""
-    pass
-
-
 @retry(
     stop=stop_after_attempt(2),
     wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -40,16 +35,11 @@ async def close_client():
 async def call_model(model: str, prompt: str, max_tokens: int = 1024, **kwargs) -> str:
     """Call API with given model and prompt."""
     from services.model_provider import ModelProvider
-    
+
     provider = ModelProvider.get_instance()
-    task = kwargs.get("task", "general")
-    if model in ["openai/gpt-oss-120b", "llama-3.3-70b-versatile", "deep_dive"]:
-        task = "coding"
-            
     try:
         result = await provider.route_inference(
-            prompt=prompt, 
-            task=task,
+            prompt=prompt,
             model=model,
             **kwargs
         )

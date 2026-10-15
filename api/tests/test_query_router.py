@@ -6,10 +6,10 @@ from token_rate_limit import TokenRateLimitExceeded
 
 @pytest.mark.asyncio
 async def test_query_generates_fresh_response(app_client, monkeypatch):
-    async def fake_ensemble_generate(*_args, **_kwargs):
+    async def fake_generate_explanation(*_args, **_kwargs):
         return "generated"
 
-    monkeypatch.setattr(query_module, "ensemble_generate", fake_ensemble_generate)
+    monkeypatch.setattr(query_module, "generate_explanation", fake_generate_explanation)
     resp = app_client.post("/api/query", json={"topic": "Cats", "levels": ["eli5"], "mode": "fast"})
     assert resp.status_code == 200
     body = resp.json()
@@ -24,10 +24,10 @@ async def test_query_invalid_topic(app_client):
 
 @pytest.mark.asyncio
 async def test_query_allows_common_real_world_punctuation(app_client, monkeypatch):
-    async def fake_ensemble_generate(*_args, **_kwargs):
+    async def fake_generate_explanation(*_args, **_kwargs):
         return "generated"
 
-    monkeypatch.setattr(query_module, "ensemble_generate", fake_ensemble_generate)
+    monkeypatch.setattr(query_module, "generate_explanation", fake_generate_explanation)
     resp = app_client.post(
         "/api/query",
         json={"topic": "C++/Rust: async & memory safety (2026)?", "levels": ["eli5"], "mode": "fast"},
@@ -37,10 +37,10 @@ async def test_query_allows_common_real_world_punctuation(app_client, monkeypatc
 
 @pytest.mark.asyncio
 async def test_query_allows_pasted_multiline_block(app_client, monkeypatch):
-    async def fake_ensemble_generate(*_args, **_kwargs):
+    async def fake_generate_explanation(*_args, **_kwargs):
         return "generated"
 
-    monkeypatch.setattr(query_module, "ensemble_generate", fake_ensemble_generate)
+    monkeypatch.setattr(query_module, "generate_explanation", fake_generate_explanation)
     passage = (
         "Unlike copilot-style assistants that wait for instructions, "
         "AI agents can break down complex tasks, reason about steps, and execute them autonomously using the right tools.\n\n"
@@ -58,10 +58,10 @@ async def test_query_allows_pasted_multiline_block(app_client, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_query_supports_all_levels(app_client, monkeypatch):
-    async def fake_ensemble_generate(_topic, _level, *_args, **_kwargs):
+    async def fake_generate_explanation(_topic, _level, *_args, **_kwargs):
         return "ok"
 
-    monkeypatch.setattr(query_module, "ensemble_generate", fake_ensemble_generate)
+    monkeypatch.setattr(query_module, "generate_explanation", fake_generate_explanation)
 
     resp = app_client.post(
         "/api/query",
@@ -91,10 +91,10 @@ async def test_query_stream_emits_done(app_client, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_query_normalizes_and_caps_levels(app_client, monkeypatch):
-    async def fake_ensemble_generate(_topic, level, *_args, **_kwargs):
+    async def fake_generate_explanation(_topic, level, *_args, **_kwargs):
         return f"{level}-ok"
 
-    monkeypatch.setattr(query_module, "ensemble_generate", fake_ensemble_generate)
+    monkeypatch.setattr(query_module, "generate_explanation", fake_generate_explanation)
 
     resp = app_client.post(
         "/api/query",
@@ -111,10 +111,10 @@ async def test_query_normalizes_and_caps_levels(app_client, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_query_returns_429_on_token_limit(app_client, monkeypatch):
-    async def fake_ensemble_generate(*_args, **_kwargs):
+    async def fake_generate_explanation(*_args, **_kwargs):
         raise TokenRateLimitExceeded("limit", 60, "2026-01-01T00:00:00+00:00")
 
-    monkeypatch.setattr(query_module, "ensemble_generate", fake_ensemble_generate)
+    monkeypatch.setattr(query_module, "generate_explanation", fake_generate_explanation)
     resp = app_client.post("/api/query", json={"topic": "Limits", "levels": ["eli5"], "mode": "fast"})
     assert resp.status_code == 429
     body = resp.json()
@@ -125,11 +125,11 @@ async def test_query_returns_429_on_token_limit(app_client, monkeypatch):
 async def test_query_uses_response_cache(app_client, monkeypatch):
     calls = {"count": 0}
 
-    async def fake_ensemble_generate(*_args, **_kwargs):
+    async def fake_generate_explanation(*_args, **_kwargs):
         calls["count"] += 1
         return "cached-result"
 
-    monkeypatch.setattr(query_module, "ensemble_generate", fake_ensemble_generate)
+    monkeypatch.setattr(query_module, "generate_explanation", fake_generate_explanation)
     payload = {"topic": "Caching", "levels": ["eli5"], "mode": "fast"}
 
     first = app_client.post("/api/query", json=payload)
@@ -146,12 +146,12 @@ async def test_query_uses_response_cache(app_client, monkeypatch):
 async def test_query_with_image_input(app_client, monkeypatch):
     received = {}
 
-    async def fake_ensemble_generate(topic, level, mode=None, client_ip="unknown", image_data=None):
+    async def fake_generate_explanation(topic, level, mode=None, client_ip="unknown", image_data=None):
         received["topic"] = topic
         received["image_data"] = image_data
         return "diagram explanation"
 
-    monkeypatch.setattr(query_module, "ensemble_generate", fake_ensemble_generate)
+    monkeypatch.setattr(query_module, "generate_explanation", fake_generate_explanation)
     sample_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
     resp = app_client.post(
         "/api/query",
@@ -167,11 +167,11 @@ async def test_query_with_image_input(app_client, monkeypatch):
 async def test_query_empty_topic_with_image_defaults_topic(app_client, monkeypatch):
     received = {}
 
-    async def fake_ensemble_generate(topic, level, mode=None, client_ip="unknown", image_data=None):
+    async def fake_generate_explanation(topic, level, mode=None, client_ip="unknown", image_data=None):
         received["topic"] = topic
         return "explained"
 
-    monkeypatch.setattr(query_module, "ensemble_generate", fake_ensemble_generate)
+    monkeypatch.setattr(query_module, "generate_explanation", fake_generate_explanation)
     sample_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
     resp = app_client.post(
         "/api/query",

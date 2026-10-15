@@ -3,7 +3,7 @@
 import asyncio
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 import structlog
@@ -14,7 +14,6 @@ from fastapi.responses import JSONResponse
 from config import get_settings
 from logging_config import logger, setup_logging
 from routers import pinned, query
-from services.inference import close_client
 from services.model_provider import ModelError, ModelProvider, ModelUnavailable
 from services.upstash_redis import close_upstash_redis_client, get_upstash_redis_client
 from token_rate_limit import TokenRateLimitExceeded
@@ -26,11 +25,10 @@ async def lifespan(app: FastAPI):
     setup_logging()
 
     provider = ModelProvider.get_instance()
-    await provider.initialize()
     logger.info("startup", gemini_configured=provider.gemini_configured)
 
     yield
-    await asyncio.gather(close_client(), ModelProvider.get_instance().close(), close_upstash_redis_client())
+    await close_upstash_redis_client()
 
 
 app = FastAPI(
@@ -42,7 +40,7 @@ Welcome to the developer documentation for the KnowBear core explanation APIs.
 KnowBear provides a structured educational system that synthesizes topics at varying target levels (e.g., child, pre-teen, teenager, expert, or meme).
 
 #### Features:
-*   **Ensemble Query Synthesis:** Synchronous batch generation using weighted LLM judges.
+*   **Direct Multi-Level Synthesis:** Fast single-model generation across cognitive levels.
 *   **Real-time SSE Streaming:** Live streaming of individual explanation levels with automatic fallback support.
 *   **Distributed Rate Limiting:** Enforces token quotas using Upstash Redis with robust in-memory fallbacks.
 *   **Curated Pinned Topics:** Cache-enabled reference topics to bootstrap user sessions.
@@ -191,7 +189,7 @@ async def health():
     settings = get_settings()
     status = {
         "status": "ok",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "environment": settings.environment,
     }
 
@@ -230,7 +228,7 @@ async def keep_alive():
 
     return {
         "status": "alive",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "probes": {"upstash_redis": upstash_result},
     }
 

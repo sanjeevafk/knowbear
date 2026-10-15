@@ -23,8 +23,6 @@
     "dependencies": {
         "framer-motion": "^12.28.1",
         "lucide-react": "^0.562.0",
-        "lz-string": "^1.5.0",
-        "marked": "^17.0.1",
         "mermaid": "^10.6.1",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",

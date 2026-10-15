@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { queryTopic, queryTopicStream } from './api'
+import { queryTopicStream } from './api'
 
 describe('api client', () => {
     afterEach(() => {
         vi.restoreAllMocks()
     })
 
-    it('includes request id in non-OK query errors', async () => {
+    it('propagates request id when stream and fallback fail', async () => {
         const fetchMock = vi.fn().mockResolvedValue(
             new Response(JSON.stringify({ error: 'boom' }), {
                 status: 500,
@@ -15,8 +15,18 @@ describe('api client', () => {
         )
         vi.stubGlobal('fetch', fetchMock)
 
-        await expect(queryTopic({ topic: 'test', levels: ['eli5'], mode: 'fast' })).rejects.toThrow(
-            'API error: 500 (request id: req-123)'
+        const onError = vi.fn()
+        await queryTopicStream(
+            { topic: 'test', levels: ['eli5'], mode: 'fast' },
+            vi.fn(),
+            vi.fn(),
+            onError
+        )
+
+        expect(onError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                message: expect.stringContaining('(request id: req-123)'),
+            })
         )
     })
 

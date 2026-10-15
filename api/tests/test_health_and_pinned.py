@@ -1,7 +1,5 @@
 import pytest
 
-import routers.pinned as pinned_module
-
 
 @pytest.mark.asyncio
 async def test_health_ok(app_client):
@@ -25,10 +23,15 @@ async def test_health_in_prod(app_client, test_settings):
 
 
 @pytest.mark.asyncio
-async def test_pinned_topics():
-    topics = await pinned_module.get_pinned()
-    assert topics
+async def test_pinned_topics_endpoint(app_client):
+    resp = app_client.get("/api/pinned")
+    assert resp.status_code == 200
+    assert "public, max-age=86400" in resp.headers.get("Cache-Control", "")
+    topics = resp.json()
+    assert len(topics) > 0
     assert topics[0]["id"]
+    assert topics[0]["title"]
+    assert topics[0]["description"]
 
 
 @pytest.mark.asyncio

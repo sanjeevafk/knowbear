@@ -14,8 +14,7 @@ from collections.abc import AsyncIterator, Iterator
 from typing import cast
 
 from logging_config import logger
-from services.ensemble import ensemble_generate
-from services.inference import generate_stream_explanation
+from services.inference import generate_explanation, generate_stream_explanation
 from services.upstash_redis import get_upstash_redis_client
 from token_rate_limit import TokenRateLimitExceeded
 from utils import LEVELS, sanitize_topic
@@ -49,11 +48,6 @@ class QueryRequest(BaseModel):
         default=None,
         description="Optional generation mode parameter (legacy).",
         json_schema_extra={"example": "standard"}
-    )
-    retrieval: str | None = Field(
-        default=None, 
-        description="Legacy web retrieval parameter (deprecated, ignored).",
-        json_schema_extra={"example": "auto"}
     )
     temperature: float = Field(
         0.7,
@@ -209,7 +203,7 @@ async def query_topic(req: QueryRequest, request: Request) -> QueryResponse:
                 explanations[level] = cached
                 continue
         tasks[level] = asyncio.create_task(
-            ensemble_generate(topic, level, req.mode, client_ip=client_ip, image_data=req.image)
+            generate_explanation(topic, level, client_ip=client_ip, image_data=req.image)
         )
 
     results = await asyncio.gather(*tasks.values(), return_exceptions=True) if tasks else []
