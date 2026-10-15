@@ -32,16 +32,25 @@ const sizeClasses: Record<NonNullable<KnowBearAvatarProps['size']>, string> = {
     '2xl': 'w-32 h-32',
 }
 
+const AVAILABLE_EXPRESSIONS = new Set([
+    'default',
+    'happy',
+    'idea',
+    'serious',
+    'meme',
+    'loading',
+    'confused',
+])
+
 export const KnowBearAvatar: React.FC<KnowBearAvatarProps> = ({
     expression = 'default',
     size = 'md',
-    transparent = true,
     animate = true,
     pulse = false,
     className = '',
 }) => {
-    const fileName = transparent ? `${expression}_transparent.png` : `${expression}.png`
-    const src = `/brand/expressions/${fileName}`
+    const activeExpression = AVAILABLE_EXPRESSIONS.has(expression) ? expression : 'default'
+    const src = `/brand/expressions/${activeExpression}_transparent.png`
 
     return (
         <AnimatePresence mode="wait">

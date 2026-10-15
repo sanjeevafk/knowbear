@@ -30,13 +30,12 @@ const sizeClasses: Record<NonNullable<KnowBearPoseProps['size']>, string> = {
 export const KnowBearPose: React.FC<KnowBearPoseProps> = ({
     pose = 'wave',
     size = 'md',
-    transparent = true,
     animate = true,
     floating = false,
     className = '',
 }) => {
-    const fileName = transparent ? `${pose}_transparent.png` : `${pose}.png`
-    const src = `/brand/poses/${fileName}`
+    // Landing page hero uses the wave pose
+    const src = '/brand/poses/wave_transparent.png'
 
     return (
         <motion.div
