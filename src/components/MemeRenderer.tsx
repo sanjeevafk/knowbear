@@ -1,90 +1,11 @@
 import { useState, useEffect, forwardRef } from 'react'
 import { Download, Copy, Check, FileText, Share2, Image as ImageIcon } from 'lucide-react'
-import { copyMemeImageToClipboard, shareMemeImage, downloadMemePng } from '../utils/memeImage'
+import { copyMemeImageToClipboard, shareMemeImage, downloadMemePng, parseMemeContent } from '../utils/memeImage'
 
 interface MemeRendererProps {
   content: string
   topic?: string
   streaming?: boolean
-}
-
-export interface ParsedMeme {
-  setup: string
-  punchline: string
-  cleanText: string
-}
-
-function sanitizeMemeText(raw: string): string {
-  return raw
-    // Strip regeneration quotes (---\n*"Quote"* — Author)
-    .replace(/\n*---\s*\n\s*\*["'][^"']+["']\*\s*—\s*.*$/s, '')
-    .replace(/\n*---\s*$/s, '')
-    // Strip reasoning blocks
-    .replace(/<think>[\s\S]*?<\/think>/gi, '')
-    .replace(/^Thought:[\s\S]*?\n\n/gi, '')
-    // Strip legacy TEMPLATE: line if present
-    .replace(/TEMPLATE:\s*\w+\s*\n*/gi, '')
-    .trim()
-}
-
-export function parseMemeContent(rawContent: string, fallbackTopic = 'The Concept'): ParsedMeme {
-  const text = sanitizeMemeText(rawContent)
-  
-  // Try JSON first
-  if (text.startsWith('{') && text.endsWith('}')) {
-    try {
-      const parsed = JSON.parse(text)
-      const setup = sanitizeMemeText(parsed.setup || fallbackTopic)
-      const punchline = sanitizeMemeText(parsed.punchline || text)
-      return {
-        setup,
-        punchline,
-        cleanText: punchline || text,
-      }
-    } catch {
-      // Ignore JSON parse failure
-    }
-  }
-
-  let setup = ''
-  let punchline = ''
-
-  const setupMatch = text.match(/SETUP:\s*([\s\S]*?)(?=PUNCHLINE:|$)/i)
-  if (setupMatch) {
-    setup = setupMatch[1].trim()
-  }
-
-  const punchlineMatch = text.match(/PUNCHLINE:\s*([\s\S]*?)$/i)
-  if (punchlineMatch) {
-    punchline = punchlineMatch[1].trim()
-  }
-
-  // Fallback if structured headers weren't found:
-  // entire text is the punchline, topic is the setup
-  if (!punchline) {
-    setup = fallbackTopic
-    punchline = text.replace(/^["']|["']$/g, '')
-  }
-
-  setup = sanitizeMemeText(setup || fallbackTopic)
-  punchline = sanitizeMemeText(punchline)
-
-  // Clean text for Plain Text view (normal response like before)
-  let cleanText = text
-  if (setupMatch || punchlineMatch) {
-    const cleanSetup = setup.replace(/^KnowBear(\s+asks)?:?\s*/i, '').trim()
-    const cleanPunchline = punchline.replace(/^KnowBear(\s+says)?:?\s*/i, '').trim()
-    if (cleanSetup && cleanSetup !== fallbackTopic) {
-      cleanText = `${cleanSetup} ${cleanPunchline}`
-    } else {
-      cleanText = cleanPunchline
-    }
-  }
-
-  // Strip wrapping outer quotes for clean reading
-  cleanText = cleanText.replace(/^["']|["']$/g, '').trim()
-
-  return { setup, punchline, cleanText }
 }
 
 function getMemeFontClass(text: string): string {

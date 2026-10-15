@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, act } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import AppPage from './AppPage'
 import { useKnowBearStore } from '../store/useKnowBearStore'
@@ -34,19 +34,21 @@ describe('AppPage', () => {
         vi.clearAllMocks()
     })
 
-    it('renders initial empty state', () => {
-        render(
-            <BrowserRouter>
-                <AppPage />
-            </BrowserRouter>
-        )
+    it('renders initial empty state', async () => {
+        await act(async () => {
+            render(
+                <BrowserRouter>
+                    <AppPage />
+                </BrowserRouter>
+            )
+        })
 
         expect(screen.getByTestId('navbar')).toBeInTheDocument()
         expect(screen.getByTestId('search-bar')).toBeInTheDocument()
         expect(screen.getByText('What passes for knowledge...?')).toBeInTheDocument()
     })
 
-    it('renders result from store', () => {
+    it('renders result from store', async () => {
         const store = useKnowBearStore.getState()
         store.setResult({
             topic: 'blockchain',
@@ -54,11 +56,13 @@ describe('AppPage', () => {
             mode: 'fast',
         })
 
-        render(
-            <BrowserRouter>
-                <AppPage />
-            </BrowserRouter>
-        )
+        await act(async () => {
+            render(
+                <BrowserRouter>
+                    <AppPage />
+                </BrowserRouter>
+            )
+        })
 
         expect(screen.getByText('blockchain')).toBeInTheDocument()
         expect(screen.getByTestId('explanation-card')).toHaveTextContent('Blockchain is like a digital ledger')

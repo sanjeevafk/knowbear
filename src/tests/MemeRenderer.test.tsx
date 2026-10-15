@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import MemeRenderer, { parseMemeContent } from '../components/MemeRenderer'
+import MemeRenderer from '../components/MemeRenderer'
+import { parseMemeContent } from '../utils/memeImage'
 
 describe('parseMemeContent', () => {
   it('parses structured SETUP and PUNCHLINE tags into cleanText', () => {

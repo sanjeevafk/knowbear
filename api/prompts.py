@@ -39,13 +39,3 @@ Output in plain text only, no markdown, no bolding, no headers. Just paragraphs.
 Output in plain text only. CRITICAL: Do not output thinking, reasoning, or markdown formatting. Output ONLY the one-liner meme.""",
 
 }
-
-JUDGE_PROMPT = """Rate these responses for "{topic}" on coherence (1-5), accuracy (1-5), conciseness (1-5).
-{responses}
-Output JSON: {{"best": 0|1, "reason": "brief"}}"""
-
-# Model configs
-MODEL = "openai/gpt-oss-20b"
-FAST_MODEL = "openai/gpt-oss-20b"
-ENSEMBLE_MODELS = ["openai/gpt-oss-20b"]
-JUDGE_MODEL = "gemini-2.5-flash"

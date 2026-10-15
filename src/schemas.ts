@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
 export const modeSchema = z.string().optional()
-export const streamStatusSchema = z.enum(['idle', 'live', 'fallback', 'degraded'])
 export const levelSchema = z.enum(['eli5', 'eli12', 'eli15', 'meme'])
 
 export const queryRequestSchema = z

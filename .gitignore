@@ -23,4 +23,3 @@ api/.pytest_cache
 .vscode
 .pytest_cache
 .codex
-convert_all.py

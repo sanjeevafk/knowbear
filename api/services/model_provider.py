@@ -41,10 +41,6 @@ class ModelError(Exception):
     """Base model error."""
     pass
 
-class RequiresPro(ModelError):
-    """Raised when a model requires pro/gated access."""
-    pass
-
 class ModelUnavailable(ModelError):
     """Raised when a model is not configured or fails."""
     pass
@@ -54,13 +50,12 @@ class ModelProvider:
     """Singleton for managing model clients."""
 
     _instance = None
-    
+
     def __init__(self):
         self.settings = get_settings()
         self.gemini_client = None
         self.groq_client = None
         self.gemini_configured = False
-        
 
         if self.settings.gemini_api_key:
             try:
@@ -80,33 +75,14 @@ class ModelProvider:
                 self.groq_client = AsyncGroq(**groq_kwargs)
             except Exception as e:
                 logger.error("groq_init_failed", error=str(e))
-        
 
     @classmethod
     def get_instance(cls):
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
-    
-    async def close(self):
-        """Close clients."""
-        return None
 
-    
-    async def initialize(self):
-        """Startup initialization and validation."""
-        pass
-            
-    async def generate_text(self, model_type: str, prompt: str, **kwargs) -> str:
-        """Complete text using specified model."""
-        if model_type == "gemini":
-            result = await self._call_gemini_direct(prompt, **kwargs)
-            return result["content"]
-        else:
-            result = await self.route_inference(prompt, **kwargs)
-            return result["content"]
-
-    async def route_inference(self, prompt: str, image_data=None, task="general", **kwargs) -> dict:
+    async def route_inference(self, prompt: str, image_data=None, **kwargs) -> dict:
         """
         Intelligent Router for Zero-Cost Inference
         """
@@ -140,29 +116,18 @@ class ModelProvider:
                 logger.error("gemini_heavy_failed", error=str(e))
                 raise ModelError(f"Gemini generation failed: {e}")
 
-        # 2. INTELLIGENT ROUTING (Groq: GPT-OSS 20B)
-        target_model = "openai/gpt-oss-20b"
-        max_tokens = 1200
-            
-        # 4. OVERRIDE if specific valid model requested
+        # Model selection: gemini direct or Groq target
         req_model = kwargs.get("model")
         if req_model:
             if req_model == "gemini":
                 return await self._call_gemini_direct(prompt, model_name=DEFAULT_GEMINI_MODEL, **kwargs)
-            elif isinstance(req_model, str) and req_model.startswith("gemini-"):
+            if isinstance(req_model, str) and req_model.startswith("gemini-"):
                 return await self._call_gemini_direct(prompt, model_name=req_model, **kwargs)
-            elif req_model in [
-                "llama-3.1-8b-instant", 
-                "llama-3.3-70b-versatile", 
-                "llama-3.1-70b-versatile", 
-                "deepseek-r1-distill-llama-70b", 
-                "mixtral-8x7b-32768", 
-                "gemma2-9b-it",
-                "openai/gpt-oss-120b",
-                "openai/gpt-oss-20b",
-                "meta-llama/llama-guard-4-12b"
-            ]:
-                target_model = req_model
+            target_model = req_model
+        else:
+            target_model = "openai/gpt-oss-20b"
+
+        max_tokens = 1200
 
         # 5. EXECUTION
         if not self.groq_client:
