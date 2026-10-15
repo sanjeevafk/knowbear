@@ -1,6 +1,10 @@
 # KnowBear
 
-KnowBear is an explanation engine that breaks down complex software, systems, and concepts across multiple cognitive depths. It is available in two distinct interfaces:
+KnowBear is an explanation engine that makes complex concepts easier to understand across different cognitive depths.
+
+> Made as a fun experimental project assisted by AI to explore how I learn—taking dense, intimidating technical jargon and simplifying it into intuitive, memorable concepts.
+
+It is available in two distinct interfaces:
 
 ---
 
@@ -54,3 +58,9 @@ Or via Docker:
 ```bash
 docker compose up --build
 ```
+
+---
+
+## License
+
+Do whatever you want with it. Fork it, remix it, break it, or build something fun.
