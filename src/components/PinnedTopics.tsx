@@ -7,19 +7,24 @@ interface PinnedTopicsProps {
 
 export default function PinnedTopics({ topics, onSelect }: PinnedTopicsProps) {
     return (
-        <section className="w-full max-w-4xl mx-auto mt-8">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-4">Popular Topics</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {topics.map((t) => (
+        <section className="w-full max-w-3xl mx-auto mt-6">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-6 text-center">
+                Popular Topics
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                {topics.map((item, index) => (
                     <button
-                        key={t.id}
-                        onClick={() => onSelect(t.title)}
-                        className="p-4 bg-dark-800 border border-dark-600 rounded-xl hover:border-amber-500 hover:bg-dark-700 transition-all text-left group"
+                        key={item.id}
+                        onClick={() => onSelect(item.title)}
+                        className="p-6 bg-dark-800 border border-dark-600 rounded-2xl hover:border-amber-500 hover:bg-dark-700 transition-all text-left group flex flex-col gap-3"
                     >
-                        <h3 className="font-medium text-white group-hover:text-amber-400 transition-colors">
-                            {t.title}
+                        <span className="text-xs font-bold text-amber-500/70 font-mono">0{index + 1}</span>
+                        <h3 className="font-semibold text-white group-hover:text-amber-400 transition-colors text-lg">
+                            {item.title}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">{t.description}</p>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                            {item.description}
+                        </p>
                     </button>
                 ))}
             </div>

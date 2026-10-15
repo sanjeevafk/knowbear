@@ -31,7 +31,6 @@ PINNED_TOPICS = [
     {"id": "black-holes", "title": "How Black Holes Work", "description": "Event horizons, spacetime warping, and singularities."},
     {"id": "sleep", "title": "Why We Need Sleep", "description": "Brain restoration, memory consolidation, and circadian rhythms."},
     {"id": "inflation", "title": "How Inflation Works", "description": "Money supply, purchasing power, and everyday economics."},
-    {"id": "vaccines", "title": "How Vaccines Work", "description": "Immune system training, antibodies, and disease prevention."},
 ]
 
 
