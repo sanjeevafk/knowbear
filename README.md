@@ -34,7 +34,10 @@ A fast, distraction-free reading interface for conceptual explanations across 4 
 - **ELI15:** High-school depth connecting broader ideas.
 - **Meme:** Humorous, punchy one-liner summaries.
 
-*(Note: The web app focuses purely on conversational text paragraphs. Code implementation and architecture diagrams are powered by the Agent Skill.)*
+### Input Modes
+
+- **Topics & Passages:** Short queries or pasted multiline text excerpts up to 2,000 characters (`Shift+Enter` for newlines).
+- **Screenshots & Images:** Direct clipboard paste (`Ctrl+V`) or file upload for visual explanations powered by Gemini 3 Flash.
 
 ### Quickstart
 
@@ -42,7 +45,7 @@ A fast, distraction-free reading interface for conceptual explanations across 4 
 npm run local:start
 ```
 
-Starts the React frontend at `http://localhost:5173` and FastAPI backend (`openai/gpt-oss-20b`) at `http://localhost:8000`.
+Starts the React frontend at `http://localhost:5173` and FastAPI backend at `http://localhost:8000` (requires `GROQ_API_KEY` for text and optional `GEMINI_API_KEY` for vision in `.env`).
 
 Or via Docker:
 
