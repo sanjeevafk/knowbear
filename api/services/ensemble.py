@@ -10,8 +10,9 @@ async def ensemble_generate(
     level: str,
     mode: str | None = None,
     client_ip: str = "unknown",
+    image_data: str | None = None,
 ) -> str:
-    """Generate explanation directly using standard GPT-OSS 20B model."""
+    """Generate explanation directly using standard GPT-OSS 20B model (or Gemini for vision)."""
     try:
         return await generate_explanation(
             topic,
@@ -19,6 +20,7 @@ async def ensemble_generate(
             FAST_MODEL,
             is_pro=False,
             client_ip=client_ip,
+            image_data=image_data,
         )
     except Exception as e:
         raise RuntimeError(f"Generation failed: {e}")

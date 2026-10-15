@@ -4,13 +4,19 @@ export const modeSchema = z.string().optional()
 export const streamStatusSchema = z.enum(['idle', 'live', 'fallback', 'degraded'])
 export const levelSchema = z.enum(['eli5', 'eli12', 'eli15', 'meme'])
 
-export const queryRequestSchema = z.object({
-    topic: z.string().min(1).max(2000),
-    levels: z.array(levelSchema).optional(),
-    mode: modeSchema.optional(),
-    temperature: z.number().optional(),
-    regenerate: z.boolean().optional(),
-})
+export const queryRequestSchema = z
+    .object({
+        topic: z.string().max(2000).default(''),
+        image: z.string().optional(),
+        levels: z.array(levelSchema).optional(),
+        mode: modeSchema.optional(),
+        temperature: z.number().optional(),
+        regenerate: z.boolean().optional(),
+    })
+    .refine((data) => data.topic.trim().length > 0 || !!data.image, {
+        message: 'Either a topic or an image must be provided',
+        path: ['topic'],
+    })
 
 export const pinnedTopicSchema = z.object({
     id: z.string(),

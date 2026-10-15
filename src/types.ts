@@ -6,6 +6,7 @@ export interface PinnedTopic {
 
 export interface QueryRequest {
     topic: string
+    image?: string
     levels?: Level[]
     mode?: string
     temperature?: number

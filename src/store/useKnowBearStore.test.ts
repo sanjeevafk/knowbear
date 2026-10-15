@@ -83,4 +83,26 @@ describe('useKnowBearStore', () => {
             temperature: 1.03,
         })
     })
+
+    it('handles image input and propagates image to queryTopicStream', async () => {
+        const streamMock = vi.mocked(queryTopicStream)
+        const { result } = renderHook(() => useKnowBearStore())
+        const dummyImage = 'data:image/png;base64,sample'
+
+        await act(async () => {
+            await result.current.startSearch('', false, undefined, dummyImage)
+        })
+
+        await waitFor(() => {
+            expect(result.current.activeImage).toBe(dummyImage)
+            expect(result.current.activeTopic).toBe('Explain this image or diagram')
+        })
+
+        const firstCall = streamMock.mock.calls[0]
+        expect(firstCall?.[0]).toMatchObject({
+            topic: 'Explain this image or diagram',
+            image: dummyImage,
+            levels: ['eli5'],
+        })
+    })
 })

@@ -41,5 +41,26 @@ describe('SearchBar', () => {
         fireEvent.change(textarea, { target: { value: longText } })
         expect(screen.getByText('120/2000')).toBeInTheDocument()
     })
+
+    it('renders initial image preview chip and allows removing it', () => {
+        const dummyImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+        render(<SearchBar onSearch={() => {}} loading={false} initialImage={dummyImage} />)
+        expect(screen.getByText(/screenshot \/ diagram attached/i)).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /remove image/i })).toBeInTheDocument()
+
+        fireEvent.click(screen.getByRole('button', { name: /remove image/i }))
+        expect(screen.queryByText(/screenshot \/ diagram attached/i)).not.toBeInTheDocument()
+    })
+
+    it('submits with image even if text is empty', () => {
+        const onSearch = vi.fn()
+        const dummyImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+        render(<SearchBar onSearch={onSearch} loading={false} initialImage={dummyImage} />)
+        
+        const submitButton = screen.getByRole('button', { name: /explain/i })
+        expect(submitButton).not.toBeDisabled()
+        fireEvent.click(submitButton)
+        expect(onSearch).toHaveBeenCalledWith('', dummyImage)
+    })
 })
 
