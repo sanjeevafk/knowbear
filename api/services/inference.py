@@ -82,6 +82,6 @@ async def generate_stream_explanation(topic: str, level: str, **kwargs):
     async for chunk in provider.route_inference_stream(prompt, **kwargs):
         yield chunk
 
-    # Append random quote if this is a regeneration
-    if kwargs.get("regenerate"):
+    # Append random quote if this is a regeneration (except for meme level)
+    if kwargs.get("regenerate") and level != "meme":
         yield f"\n\n{get_regeneration_quote()}"

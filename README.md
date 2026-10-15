@@ -34,10 +34,12 @@ A fast, distraction-free reading interface for conceptual explanations across 4 
 - **ELI15:** High-school depth connecting broader ideas.
 - **Meme:** Humorous, punchy one-liner summaries.
 
-### Input Modes
+### Key Features
 
-- **Topics & Passages:** Short queries or pasted multiline text excerpts up to 2,000 characters (`Shift+Enter` for newlines).
-- **Screenshots & Images:** Direct clipboard paste (`Ctrl+V`) or file upload for visual explanations powered by Gemini 3 Flash.
+- **Multi-Level Explanations:** Seamlessly switch between ELI5, ELI12, ELI15, and Meme cognitive depths with expressive mascot avatar reactions.
+- **Shareable Meme Cards:** Generate mascot-themed punchline cards with one-click **Copy Image**, **Download Image**, or native mobile **Share** directly to chat apps.
+- **Flexible Inputs:** Query topics, paste multiline reading passages up to 2,000 characters (`Shift+Enter`), or paste screenshots (`Ctrl+V`) for visual explanations.
+- **Curated Starter Topics:** Streamlined popular topics for instant answers to everyday science, biology, and economics concepts.
 
 ### Quickstart
 

@@ -1,5 +1,6 @@
 import { Component, ReactNode, ErrorInfo } from 'react'
-import { AlertTriangle, RefreshCcw, Home } from 'lucide-react'
+import { RefreshCcw, Home } from 'lucide-react'
+import { KnowBearAvatar } from './KnowBearAvatar'
 
 interface Props {
     children: ReactNode
@@ -51,12 +52,12 @@ export class ErrorBoundary extends Component<Props, State> {
                 <div className="min-h-screen bg-gradient-to-b from-black via-dark-900 to-black flex flex-wrap items-center justify-center p-4">
                     <div className="max-w-2xl w-full bg-dark-800/50 backdrop-blur-xl border border-red-500/20 rounded-2xl p-8 shadow-2xl">
                         <div className="flex flex-wrap items-center gap-4 mb-6">
-                            <div className="p-4 bg-red-500/10 rounded-full">
-                                <AlertTriangle className="w-8 h-8 text-red-400" />
+                            <div className="p-2 bg-red-500/10 rounded-2xl border border-red-500/20">
+                                <KnowBearAvatar expression="confused" size="lg" />
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold text-white mb-1">Something went wrong</h1>
-                                <p className="text-gray-400">We encountered an unexpected error</p>
+                                <p className="text-gray-400">KnowBear encountered an unexpected snag</p>
                             </div>
                         </div>
 

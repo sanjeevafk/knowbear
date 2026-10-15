@@ -36,7 +36,7 @@ Output in plain text only, no markdown, no bolding, no headers. Just paragraphs.
 
 "{topic}"
 
-Output in plain text only.""",
+Output in plain text only. CRITICAL: Do not output thinking, reasoning, or markdown formatting. Output ONLY the one-liner meme.""",
 
 }
 

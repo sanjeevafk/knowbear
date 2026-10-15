@@ -28,10 +28,9 @@ class PinnedTopic(BaseModel):
 
 
 PINNED_TOPICS = [
-    {"id": "tcp-ip", "title": "TCP/IP Layers", "description": "Protocols and responsibilities by layer."},
-    {"id": "osi", "title": "OSI Model", "description": "A clean reference for network fundamentals."},
-    {"id": "climate-change", "title": "Climate Change", "description": "Causes, impacts, and practical responses."},
-    {"id": "rag", "title": "How LLM RAG Works", "description": "Retrieval + generation in practice."},
+    {"id": "black-holes", "title": "How Black Holes Work", "description": "Event horizons, spacetime warping, and singularities."},
+    {"id": "sleep", "title": "Why We Need Sleep", "description": "Brain restoration, memory consolidation, and circadian rhythms."},
+    {"id": "inflation", "title": "How Inflation Works", "description": "Money supply, purchasing power, and everyday economics."},
 ]
 
 

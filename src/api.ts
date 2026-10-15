@@ -9,7 +9,7 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 const IS_DEV = import.meta.env.DEV
-const PINNED_CACHE_KEY = 'knowbear-pinned-topics-cache-v1'
+const PINNED_CACHE_KEY = 'knowbear-pinned-topics-cache-v2'
 const PINNED_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 
 function appendRequestId(message: string, requestId: string | null): string {
