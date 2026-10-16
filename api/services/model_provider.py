@@ -18,8 +18,8 @@ from token_rate_limit import TokenRateLimitExceeded, consume_tokens, estimate_to
 DEFAULT_GEMINI_MODEL = "gemini-3-flash-preview"
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_VISION_MODELS = [
-    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
     "dots-studio/dots-3-note-preview:free",
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
     "nvidia/nemotron-3.5-super-vl:free",
 ]
 
