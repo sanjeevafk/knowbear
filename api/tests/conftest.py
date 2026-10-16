@@ -10,7 +10,7 @@ import services.model_provider as model_provider_module
 
 
 class DummyProvider:
-    gemini_configured = False
+    openrouter_configured = False
 
     async def initialize(self):
         return None
@@ -30,7 +30,7 @@ def test_settings():
     return SimpleNamespace(
         environment="test",
         groq_api_key="",
-        gemini_api_key="",
+        openrouter_api_key="",
         token_rate_limit_enabled=True,
         token_rate_limit_per_ip_hour=12000,
     )

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KnowBear</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <header class="head">
+        <span class="brand"><img class="brand-mark" src="../icons/icon48.png" alt="" />KnowBear</span>
+        <a class="settings-link" href="../options/options.html" target="_blank" rel="noopener">Settings</a>
+      </header>
+
+      <div class="modes" role="tablist" aria-label="Input mode">
+        <button type="button" role="tab" class="mode" id="mode-text" aria-selected="true" aria-controls="pane-text">Text</button>
+        <button type="button" role="tab" class="mode" id="mode-image" aria-selected="false" aria-controls="pane-image">Image</button>
+      </div>
+
+      <form id="form" novalidate>
+        <section id="pane-text" role="tabpanel" aria-labelledby="mode-text">
+          <label class="sr" for="topic">Text to explain</label>
+          <textarea id="topic" maxlength="2000" rows="5" placeholder="Paste or type a passage to explain…"></textarea>
+          <p id="topic-hint" class="hint" hidden></p>
+        </section>
+
+        <section id="pane-image" role="tabpanel" aria-labelledby="mode-image" hidden>
+          <div id="drop" class="drop" tabindex="0" aria-label="Paste an image with Ctrl+V">
+            <img id="preview" alt="Selected image preview" hidden />
+            <p id="drop-empty" class="drop-empty">Paste a screenshot (Ctrl+V), upload, or capture this tab</p>
+          </div>
+          <div class="image-actions">
+            <label class="btn btn-ghost" for="file">Upload</label>
+            <input id="file" type="file" accept="image/*" class="sr" />
+            <button type="button" id="capture" class="btn btn-ghost">Capture visible tab</button>
+            <button type="button" id="clear-image" class="btn btn-ghost" hidden>Remove</button>
+          </div>
+          <label class="sr" for="image-topic">Optional question about the image</label>
+          <textarea id="image-topic" maxlength="2000" rows="2" placeholder="Optional: what should KnowBear focus on?"></textarea>
+        </section>
+
+        <div class="controls">
+          <label class="sr" for="level">Level</label>
+          <select id="level">
+            <option value="eli5">ELI5 — very simple</option>
+            <option value="eli12">ELI12 — balanced</option>
+            <option value="eli15">ELI15 — more technical</option>
+            <option value="meme">Meme — humor &amp; analogies</option>
+          </select>
+          <button type="submit" id="submit" class="btn btn-primary">Explain</button>
+        </div>
+      </form>
+
+      <p id="notice" class="notice" role="alert" hidden></p>
+
+      <section id="result" class="result" aria-live="polite" hidden>
+        <div id="result-body"></div>
+        <div class="result-actions">
+          <button type="button" id="open-app" class="btn btn-ghost">Open in app</button>
+          <button type="button" id="copy" class="btn btn-ghost">Copy</button>
+        </div>
+      </section>
+    </main>
+    <script src="../lib/protocol.js"></script>
+    <script src="../lib/context.js"></script>
+    <script src="../lib/meme.js"></script>
+    <script src="../lib/api.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

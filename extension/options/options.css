@@ -1,0 +1,37 @@
+@font-face { font-family: "KnowBear Plex"; src: url("../fonts/IBMPlexSans-Regular.woff2") format("woff2"); font-weight: 400; }
+@font-face { font-family: "KnowBear Plex"; src: url("../fonts/IBMPlexSans-SemiBold.woff2") format("woff2"); font-weight: 600; }
+@font-face { font-family: "KnowBear Plex"; src: url("../fonts/IBMPlexSans-Bold.woff2") format("woff2"); font-weight: 700; }
+
+:root {
+  --bg: #0f0e0c; --card: #141310; --raised: #1c1b17; --border: #26241f;
+  --text: #f5f2e8; --muted: #9b968a; --accent: #e8c547; --accent-text: #141310; --ok: #4ade80; --bad: #f87171;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.55 "KnowBear Plex", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+}
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.page { max-width: 560px; margin: 48px auto; padding: 0 20px; }
+h1 { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; font-size: 22px; }
+.brand-mark { width: 28px; height: 28px; border-radius: 7px; object-fit: cover; display: block; background: #0F1B2D; border: 1px solid rgba(232, 197, 71, .35); }
+.lede { margin: 0 0 20px; color: var(--muted); }
+.card { padding: 6px 18px; margin-bottom: 14px; border-radius: 12px; background: var(--card); border: 1px solid var(--border); }
+.row { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.row:last-child { border-bottom: 0; }
+.row > label, .label { display: block; margin-bottom: 6px; font-weight: 600; }
+.row-inline { display: flex; align-items: center; gap: 10px; }
+.row-inline label { margin: 0; font-weight: 500; }
+select, input[type="url"] { width: 100%; padding: 8px 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
+output { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.inline { display: flex; gap: 8px; align-items: center; }
+.btn { flex: none; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--raised); font-weight: 600; font-size: 13px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+kbd { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--raised); font-family: ui-monospace, monospace; font-size: 13px; }
+.help, .status { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+.status.ok { color: var(--ok); }
+.status.bad { color: var(--bad); }
+.saved { min-height: 1.5em; color: var(--muted); font-size: 13px; }

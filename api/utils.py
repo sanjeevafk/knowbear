@@ -25,5 +25,25 @@ def sanitize_topic(topic: str) -> str:
     return topic
 
 
+MAX_QUESTION_LENGTH = 500
+MAX_PAGE_TITLE_LENGTH = 300
+MAX_PAGE_URL_LENGTH = 2048
+MAX_SURROUNDING_TEXT_LENGTH = 2500
+
+
+def sanitize_context_text(text: str | None, max_length: int) -> str | None:
+    """Light sanitizer for prompt-only inputs (surrounding passage, follow-up question).
+
+    Unlike sanitize_topic, this strips control characters and truncates instead of
+    rejecting, because these fields only ground the prompt.
+    """
+    if not isinstance(text, str):
+        return None
+    cleaned = CONTROL_CHARS_PATTERN.sub("", text)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    if not cleaned:
+        return None
+    return cleaned[:max_length]
+
 
 LEVELS = ["eli5", "eli12", "eli15", "meme"]

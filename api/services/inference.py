@@ -3,7 +3,7 @@
 import random
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from prompts import PROMPTS
+from prompts import FAST_MODEL, PROMPTS, build_explanation_prompt, build_followup_prompt
 from logging_config import logger
 
 REGENERATION_QUOTES = [
@@ -49,24 +49,28 @@ async def call_model(model: str, prompt: str, max_tokens: int = 1024, **kwargs) 
         raise e
 
 
-async def generate_explanation(topic: str, level: str, model: str = "openai/gpt-oss-20b", **kwargs) -> str:
+async def generate_explanation(
+    topic: str,
+    level: str,
+    model: str = "openai/gpt-oss-20b",
+    context: dict | None = None,
+    **kwargs,
+) -> str:
     """Generate explanation for topic at given level."""
-    template = PROMPTS.get(level)
-    if not template:
+    if level not in PROMPTS:
         raise ValueError(f"Unknown level: {level}")
 
-    prompt = template.replace("{topic}", topic)
+    prompt = build_explanation_prompt(topic, level, context)
     return await call_model(model, prompt, **kwargs)
 
 
-async def generate_stream_explanation(topic: str, level: str, **kwargs):
+async def generate_stream_explanation(topic: str, level: str, context: dict | None = None, **kwargs):
     """Stream explanation for topic at given level."""
     from services.model_provider import ModelProvider
 
-    template = PROMPTS.get(level)
-    if not template:
+    if level not in PROMPTS:
         raise ValueError(f"Unknown level: {level}")
-    prompt = template.replace("{topic}", topic)
+    prompt = build_explanation_prompt(topic, level, context)
 
     provider = ModelProvider.get_instance()
     async for chunk in provider.route_inference_stream(prompt, **kwargs):
@@ -75,3 +79,16 @@ async def generate_stream_explanation(topic: str, level: str, **kwargs):
     # Append random quote if this is a regeneration (except for meme level)
     if kwargs.get("regenerate") and level != "meme":
         yield f"\n\n{get_regeneration_quote()}"
+
+
+async def generate_followup(
+    topic: str,
+    level: str,
+    question: str,
+    context: dict | None = None,
+    history: list[dict] | None = None,
+    **kwargs,
+) -> str:
+    """Answer a follow-up question about a topic using the fast model."""
+    prompt = build_followup_prompt(topic, level, question, context, history)
+    return await call_model(FAST_MODEL, prompt, **kwargs)
