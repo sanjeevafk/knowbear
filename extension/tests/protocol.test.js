@@ -22,9 +22,9 @@ describe('protocol constants', () => {
   });
 
   it('matches vision-unavailable messages from batch and stream', () => {
-    expect(KB.VISION_UNAVAILABLE_RE.test('Vision unavailable: Gemini is not configured')).toBe(true);
-    expect(KB.VISION_UNAVAILABLE_RE.test('Gemini is not configured for visual tasks.')).toBe(true);
-    expect(KB.VISION_UNAVAILABLE_RE.test('Gemini is not configured for heavy/visual tasks.')).toBe(true);
+    expect(KB.VISION_UNAVAILABLE_RE.test('Vision unavailable: OpenRouter is not configured')).toBe(true);
+    expect(KB.VISION_UNAVAILABLE_RE.test('OpenRouter is not configured for visual tasks.')).toBe(true);
+    expect(KB.VISION_UNAVAILABLE_RE.test('OpenRouter is not configured for heavy/visual tasks.')).toBe(true);
     expect(KB.VISION_UNAVAILABLE_RE.test('Invalid characters in topic')).toBe(false);
   });
 });

@@ -147,7 +147,7 @@ def test_image_only_rewrites_topic(app_client, capture_generate):
 
 def test_vision_unavailable_is_content_level_200(app_client, monkeypatch):
     async def fake_generate_explanation(*_args, **_kwargs):
-        raise ModelUnavailable("Gemini is not configured for heavy/visual tasks.")
+        raise ModelUnavailable("OpenRouter is not configured for visual tasks.")
 
     monkeypatch.setattr(query_module, "generate_explanation", fake_generate_explanation)
     resp = app_client.post("/api/query", json={"image": "data:image/png;base64,AAAA", "levels": ["eli5"]})

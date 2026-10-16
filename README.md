@@ -51,7 +51,7 @@ A fast, distraction-free reading interface for conceptual explanations across 4 
 npm run local:start
 ```
 
-Starts the React frontend at `http://localhost:5173` and FastAPI backend at `http://localhost:8000` (requires `GROQ_API_KEY` for text and optional `GEMINI_API_KEY` for vision in `.env`).
+Starts the React frontend at `http://localhost:5173` and FastAPI backend at `http://localhost:8000` (requires `GROQ_API_KEY` for text and optional `OPENROUTER_API_KEY` for vision in `.env`).
 
 Or via Docker:
 

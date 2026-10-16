@@ -50,7 +50,7 @@
     if (KB.VISION_UNAVAILABLE_RE.test(message)) {
       return { code: 'vision_unavailable', message, retryAfter: null };
     }
-    if (/Gemini streaming failed/i.test(message)) {
+    if (/OpenRouter.*streaming failed/i.test(message)) {
       return { code: 'server', message, retryAfter: null };
     }
     if (status === 400 || status === 422) {
@@ -224,7 +224,7 @@
       return err.retryAfter ? `Rate limit — retry in ~${err.retryAfter}s` : 'Rate limit — try again shortly';
     }
     if (code === 'vision_unavailable') {
-      return imageFlow ? 'Vision needs GEMINI_API_KEY on the backend' : (err.message || 'Vision unavailable');
+      return imageFlow ? 'Vision needs OPENROUTER_API_KEY on the backend' : (err.message || 'Vision unavailable');
     }
     return (err && err.message) || 'Something went wrong';
   };

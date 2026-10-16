@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
     setup_logging()
 
     provider = ModelProvider.get_instance()
-    logger.info("startup", gemini_configured=provider.gemini_configured)
+    logger.info("startup", openrouter_configured=provider.openrouter_configured)
 
     yield
     await close_upstash_redis_client()
@@ -77,8 +77,8 @@ async def security_headers(request: Request, call_next):
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live; "
         "style-src 'self' 'unsafe-inline'; "
-        "img-src 'self' blob: data: https://*.googleusercontent.com; "
-        "connect-src 'self' https://*.groq.com https://api.groq.com; "
+        "img-src 'self' blob: data:; "
+        "connect-src 'self' https://*.groq.com https://api.groq.com https://openrouter.ai; "
         "font-src 'self' data:; "
         "object-src 'none'; "
         "base-uri 'self'; "
@@ -188,20 +188,12 @@ app.include_router(query.router, prefix="/api")
 )
 async def health():
     settings = get_settings()
-    status = {
+    return {
         "status": "ok",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "environment": settings.environment,
+        "openrouter_vision": "configured" if settings.openrouter_api_key else "unconfigured",
     }
-
-    try:
-        from google import genai  # noqa: F401
-
-        status["google_genai"] = "installed"
-    except Exception as e:
-        status["google_genai"] = f"missing: {str(e)}"
-
-    return status
 
 
 async def _upstash_keepalive() -> dict:

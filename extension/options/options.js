@@ -67,7 +67,7 @@
     setStatus('Checking…');
     const res = await KB.checkHealth(base);
     if (res.ok) {
-      const vision = res.payload && res.payload.google_genai ? ` · google-genai ${res.payload.google_genai}` : '';
+      const vision = res.payload && res.payload.openrouter_vision ? ` · vision ${res.payload.openrouter_vision}` : '';
       setStatus(`Connected to ${base}${vision}`, 'ok');
     } else {
       setStatus(`${res.message || 'Not reachable'} — is the backend running at ${base}?`, 'bad');

@@ -169,7 +169,7 @@ def _context_cache_suffix(ctx: dict | None) -> str:
 
 def _is_vision_failure(result: Exception, has_image: bool) -> bool:
     message = str(result).lower()
-    return has_image or "visual" in message or "gemini" in message
+    return has_image or "visual" in message or "vision" in message or "openrouter" in message
 
 
 async def _cache_get(key: str) -> str | None:

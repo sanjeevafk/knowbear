@@ -23,11 +23,11 @@ describe('KB.errorCode', () => {
     expect(KB.errorCode(400, { detail: 'Invalid characters in topic' })).toMatchObject({ code: 'invalid', message: 'Invalid characters in topic' });
     expect(KB.errorCode(422, { detail: [{ msg: 'String should have at most 2000 characters' }] }).code).toBe('invalid');
   });
-  it('maps 400 Gemini streaming failures to server, not invalid', () => {
-    expect(KB.errorCode(400, { detail: 'Gemini streaming failed: boom' }).code).toBe('server');
+  it('maps 400 OpenRouter streaming failures to server, not invalid', () => {
+    expect(KB.errorCode(400, { detail: 'OpenRouter streaming failed: boom' }).code).toBe('server');
   });
   it('maps vision messages by content even with HTTP 200', () => {
-    expect(KB.errorCode(200, 'Gemini is not configured for visual tasks.').code).toBe('vision_unavailable');
+    expect(KB.errorCode(200, 'OpenRouter is not configured for visual tasks.').code).toBe('vision_unavailable');
   });
   it('maps 5xx to server', () => {
     expect(KB.errorCode(503, { detail: 'down' }).code).toBe('server');
@@ -53,7 +53,7 @@ describe('KB.askStream', () => {
 
   it('turns an SSE error event into a coded error keeping partial text', async () => {
     mockFetch({
-      '/api/query/stream': sseResponse(sseEvents([{ topic: 'Cats', level: 'eli12' }, { chunk: 'Part' }, { error: 'Gemini is not configured for visual tasks.' }])),
+      '/api/query/stream': sseResponse(sseEvents([{ topic: 'Cats', level: 'eli12' }, { chunk: 'Part' }, { error: 'OpenRouter is not configured for visual tasks.' }])),
     });
     await expect(KB.askStream({ base, body })).rejects.toMatchObject({ code: 'vision_unavailable', partial: 'Part' });
   });
@@ -103,7 +103,7 @@ describe('KB.explain fallback', () => {
 
 describe('KB.askBatch', () => {
   it('detects the Vision unavailable: content-level error', async () => {
-    mockFetch({ '/api/query': jsonResponse(200, { topic: 'Explain this image or diagram', explanations: { eli12: 'Vision unavailable: Gemini is not configured' } }) });
+    mockFetch({ '/api/query': jsonResponse(200, { topic: 'Explain this image or diagram', explanations: { eli12: 'Vision unavailable: OpenRouter is not configured' } }) });
     await expect(KB.askBatch({ base, body: { image: 'data:,', levels: ['eli12'] } })).rejects.toMatchObject({ code: 'vision_unavailable' });
   });
 
@@ -130,7 +130,7 @@ describe('KB.askFollowup + errorMessage', () => {
 
   it('uses the image-flow vision copy', () => {
     const err = KB.makeError('vision_unavailable', 'x');
-    expect(KB.errorMessage(err, { imageFlow: true })).toBe('Vision needs GEMINI_API_KEY on the backend');
+    expect(KB.errorMessage(err, { imageFlow: true })).toBe('Vision needs OPENROUTER_API_KEY on the backend');
     expect(KB.errorMessage(KB.makeError('offline'))).toBe('Backend not reachable — is it running?');
   });
 });

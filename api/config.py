@@ -20,7 +20,6 @@ class Settings(BaseSettings):
 
     environment: str = "development"
     groq_api_key: str = ""
-    gemini_api_key: str = ""
     openrouter_api_key: str = ""
     token_rate_limit_enabled: bool = True
     token_rate_limit_per_ip_hour: int = 12000
@@ -30,8 +29,8 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Cached settings instance."""
     settings = Settings()
-    if not settings.openrouter_api_key and not settings.gemini_api_key:
-        print("WARNING: Neither OPENROUTER_API_KEY nor GEMINI_API_KEY set. Vision models will fail.", file=sys.stderr)
+    if not settings.openrouter_api_key:
+        print("WARNING: OPENROUTER_API_KEY not set. Vision models will fail.", file=sys.stderr)
     if not settings.groq_api_key:
         print("WARNING: GROQ_API_KEY not set. Groq models will fail.", file=sys.stderr)
     return settings

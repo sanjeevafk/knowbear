@@ -222,7 +222,7 @@ export default function AppPage() {
                                             )}
                                             <div className="mt-2 flex flex-wrap items-center gap-2">
                                                 <p className="text-sm text-gray-500">
-                                                    Model: <span className="text-amber-400 font-medium">{activeImage ? 'Gemini 3 Flash (Vision)' : 'GPT-OSS 20B'}</span>
+                                                    Model: <span className="text-amber-400 font-medium">{activeImage ? 'OpenRouter Vision' : 'GPT-OSS 20B'}</span>
                                                 </p>
                                                 {streamBadge && (
                                                     <span className={`text-[11px] px-2 py-0.5 rounded-full border ${streamBadge.className}`}>

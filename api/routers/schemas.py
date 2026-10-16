@@ -12,7 +12,7 @@ class ErrorResponse(BaseModel):
     detail: str = Field(
         ..., 
         description="Detailed context explaining the failure", 
-        json_schema_extra={"example": "Gemini generation failed: timeout"}
+        json_schema_extra={"example": "OpenRouter generation failed: timeout"}
     )
     request_id: str | None = Field(
         None, 
