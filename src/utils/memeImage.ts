@@ -266,6 +266,7 @@ function sanitizeMemeText(raw: string): string {
         .replace(/<think>[\s\S]*?<\/think>/gi, '')
         .replace(/^Thought:[\s\S]*?\n\n/gi, '')
         .replace(/TEMPLATE:\s*\w+\s*\n*/gi, '')
+        .replace(/\n*\bPUNCHLINE:?\s*$/i, '')
         .trim()
 }
 
@@ -290,7 +291,7 @@ export function parseMemeContent(rawContent: string, fallbackTopic = 'The Concep
     let setup = ''
     let punchline = ''
 
-    const setupMatch = text.match(/SETUP:\s*([\s\S]*?)(?=PUNCHLINE:|$)/i)
+    const setupMatch = text.match(/SETUP:\s*([\s\S]*?)(?=PUNCHLINE:?|$)/i)
     if (setupMatch) {
         setup = setupMatch[1].trim()
     }
@@ -302,7 +303,11 @@ export function parseMemeContent(rawContent: string, fallbackTopic = 'The Concep
 
     if (!punchline) {
         setup = fallbackTopic
-        punchline = text.replace(/^["']|["']$/g, '')
+        punchline = (setupMatch ? setupMatch[1] : text)
+            .replace(/^SETUP:\s*/i, '')
+            .replace(/\bPUNCHLINE:?\s*$/i, '')
+            .trim()
+            .replace(/^["']|["']$/g, '')
     }
 
     setup = sanitizeMemeText(setup || fallbackTopic)

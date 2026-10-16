@@ -127,7 +127,7 @@ class ModelProvider:
         else:
             target_model = "openai/gpt-oss-20b"
 
-        max_tokens = 1200
+        max_tokens = 2400
 
         # 5. EXECUTION
         if not self.groq_client:
@@ -207,7 +207,7 @@ class ModelProvider:
                 raise ModelError(f"Gemini streaming failed: {e}")
 
         target_model = "openai/gpt-oss-20b"
-        max_tokens = 1200
+        max_tokens = 2400
 
         if not self.groq_client:
             # Fallback for now just returns full text as a single chunk if streaming is unavailable

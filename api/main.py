@@ -61,6 +61,7 @@ allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in allowed_origins],
+    allow_origin_regex=r"^(chrome-extension|moz-extension)://[^/]+$",
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS", "DELETE"],
     allow_headers=["content-type", "x-request-id"],

@@ -4,7 +4,7 @@ KnowBear is an explanation engine that makes complex concepts easier to understa
 
 > Made as a fun experimental project assisted by AI to explore how I learn—taking dense, intimidating technical jargon and simplifying it into intuitive, memorable concepts.
 
-It is available in two distinct interfaces:
+It is available in three distinct interfaces:
 
 ---
 
@@ -58,6 +58,22 @@ Or via Docker:
 ```bash
 docker compose up --build
 ```
+
+---
+
+## 3. Browser Extension (`extension/`)
+
+A zero-build Manifest V3 Chrome/Brave extension that explains highlighted passages or screenshots in place without leaving your tab:
+
+- **Selection Pill & Side Panel:** Highlight text on any page to open the floating KnowBear pill, pick a depth (`ELI5`, `ELI12`, `ELI15`, `Meme`), stream context-grounded explanations, step simpler/deeper, and ask multi-turn follow-up questions (`POST /api/followup`).
+- **Native PDF & Shortcut Support:** Explain selections in Chrome's PDF viewer via right-click (**Explain selection with KnowBear**), `Alt+K` (selection or clipboard fallback), or the floating PDF launcher pill.
+- **Toolbar Popup:** Explain pasted passages or screenshots (paste `Ctrl+V`, upload, or capture visible tab).
+
+### Load Unpacked
+
+1. Open `chrome://extensions` and enable **Developer mode**.
+2. Click **Load unpacked** and select the `extension/` directory.
+3. *(Optional)* Enable **Allow access to file URLs** on the KnowBear card to use it on local `file://` PDFs, or change the Backend URL in **Settings** (`https://knowbear.sanjeevkumar.me` by default, or `http://localhost:8000` for local dev).
 
 ---
 

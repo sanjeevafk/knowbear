@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>KnowBear settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="page">
+      <h1><img class="brand-mark" src="../icons/icon48.png" alt="" />KnowBear settings</h1>
+      <p class="lede">Everything runs locally. The extension talks only to your KnowBear backend.</p>
+
+      <form id="form" class="card" novalidate>
+        <div class="row">
+          <label for="level">Default level</label>
+          <select id="level">
+            <option value="eli5">ELI5 — very simple</option>
+            <option value="eli12">ELI12 — balanced</option>
+            <option value="eli15">ELI15 — more technical</option>
+            <option value="meme">Meme — humor &amp; analogies</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label for="fontSize">Panel font size <output id="fontSizeValue" for="fontSize"></output></label>
+          <input id="fontSize" type="range" min="13" max="18" step="1" />
+        </div>
+
+        <div class="row row-inline">
+          <input id="showPill" type="checkbox" />
+          <label for="showPill">Show the KnowBear pill when I select text</label>
+        </div>
+
+        <div class="row">
+          <label for="apiBase">Backend URL</label>
+          <div class="inline">
+            <input id="apiBase" type="url" placeholder="https://knowbear.sanjeevkumar.me" spellcheck="false" />
+            <button type="button" id="test" class="btn">Test connection</button>
+          </div>
+          <p id="apiStatus" class="status" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+
+      <section class="card">
+        <div class="row">
+          <span class="label">Keyboard shortcut</span>
+          <div class="inline">
+            <kbd id="shortcut">…</kbd>
+            <button type="button" id="rebind" class="btn">Change shortcut</button>
+          </div>
+          <p class="help">Explains your selection, or your clipboard text if nothing is selected. Chrome only lets you rebind it at chrome://extensions/shortcuts.</p>
+        </div>
+      </section>
+
+      <p id="saved" class="saved" role="status" aria-live="polite"></p>
+    </main>
+    <script src="../lib/protocol.js"></script>
+    <script src="../lib/api.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

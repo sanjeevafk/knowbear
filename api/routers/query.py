@@ -14,10 +14,20 @@ from collections.abc import AsyncIterator, Iterator
 from typing import cast
 
 from logging_config import logger
-from services.inference import generate_explanation, generate_stream_explanation
+from services.inference import generate_explanation, generate_followup, generate_stream_explanation
+from services.model_provider import ModelUnavailable
 from services.upstash_redis import get_upstash_redis_client
 from token_rate_limit import TokenRateLimitExceeded
-from utils import LEVELS, sanitize_topic
+from utils import (
+    LEVELS,
+    MAX_PAGE_TITLE_LENGTH,
+    MAX_PAGE_URL_LENGTH,
+    MAX_QUESTION_LENGTH,
+    MAX_SURROUNDING_TEXT_LENGTH,
+    MAX_TOPIC_LENGTH,
+    sanitize_context_text,
+    sanitize_topic,
+)
 
 router = APIRouter(tags=["query"])
 
@@ -39,6 +49,14 @@ class QueryRequest(BaseModel):
         description="Base64 data URL or raw base64 string of screenshot or diagram image.",
         json_schema_extra={"example": "data:image/png;base64,iVBORw0..."}
     )
+    selected_text: str | None = Field(
+        default=None, max_length=2000, description="Exact passage the user selected."
+    )
+    surrounding_text: str | None = Field(
+        default=None, max_length=2500, description="±600 chars of page text around the selection."
+    )
+    page_title: str | None = Field(default=None, max_length=300, description="Host page title.")
+    page_url: str | None = Field(default=None, max_length=2048, description="Host page URL.")
     levels: list[str] = Field(
         default=ALL_LEVELS,
         description="The target explanation depth levels.",
@@ -117,11 +135,41 @@ def _get_client_ip(request: Request) -> str:
     return "unknown"
 
 
-def _cache_key(topic: str, level: str, mode: str | None = None, image: str | None = None) -> str:
+def _cache_key(
+    topic: str,
+    level: str,
+    mode: str | None = None,
+    image: str | None = None,
+    context_suffix: str = "",
+) -> str:
     if image:
         img_hash = hashlib.sha256(image.encode()).hexdigest()[:12]
-        return f"query_cache:{topic.lower()}::{img_hash}::{level}"
-    return f"query_cache:{topic.lower()}::{level}"
+        return f"query_cache:{topic.lower()}::{img_hash}::{level}{context_suffix}"
+    return f"query_cache:{topic.lower()}::{level}{context_suffix}"
+
+
+def _context_payload(req) -> dict | None:
+    """Sanitized page context from any request with the extension context fields."""
+    ctx = {
+        "selected_text": sanitize_context_text(req.selected_text, MAX_TOPIC_LENGTH),
+        "surrounding_text": sanitize_context_text(req.surrounding_text, MAX_SURROUNDING_TEXT_LENGTH),
+        "page_title": sanitize_context_text(req.page_title, MAX_PAGE_TITLE_LENGTH),
+        "page_url": sanitize_context_text(req.page_url, MAX_PAGE_URL_LENGTH),
+    }
+    ctx = {k: v for k, v in ctx.items() if v}
+    return ctx or None
+
+
+def _context_cache_suffix(ctx: dict | None) -> str:
+    if not ctx:
+        return ""
+    basis = f"{ctx.get('selected_text', '')}\x1f{ctx.get('surrounding_text', '')}"
+    return f"::c{hashlib.sha1(basis.encode()).hexdigest()[:12]}"
+
+
+def _is_vision_failure(result: Exception, has_image: bool) -> bool:
+    message = str(result).lower()
+    return has_image or "visual" in message or "gemini" in message
 
 
 async def _cache_get(key: str) -> str | None:
@@ -193,17 +241,20 @@ async def query_topic(req: QueryRequest, request: Request) -> QueryResponse:
         logger.info("query_levels_normalized", requested=req.levels, normalized=levels)
 
     explanations: dict[str, str] = {}
-    logger.info("query_start_generation", topic=topic, levels=levels, mode=req.mode)
+    ctx = _context_payload(req)
+    ctx_kwargs = {"context": ctx} if ctx else {}
+    suffix = _context_cache_suffix(ctx)
+    logger.info("query_start_generation", topic=topic, levels=levels, mode=req.mode, has_context=bool(ctx))
     tasks: dict[str, asyncio.Task[str]] = {}
     for level in levels:
-        key = _cache_key(topic, level, req.mode, req.image)
+        key = _cache_key(topic, level, req.mode, req.image, context_suffix=suffix)
         if not req.regenerate:
             cached = await _cache_get(key)
             if cached:
                 explanations[level] = cached
                 continue
         tasks[level] = asyncio.create_task(
-            generate_explanation(topic, level, client_ip=client_ip, image_data=req.image)
+            generate_explanation(topic, level, client_ip=client_ip, image_data=req.image, **ctx_kwargs)
         )
 
     results = await asyncio.gather(*tasks.values(), return_exceptions=True) if tasks else []
@@ -211,7 +262,7 @@ async def query_topic(req: QueryRequest, request: Request) -> QueryResponse:
         if isinstance(result, str):
             explanations[level] = result
             if not req.regenerate:
-                await _cache_set(_cache_key(topic, level, req.mode, req.image), result)
+                await _cache_set(_cache_key(topic, level, req.mode, req.image, context_suffix=suffix), result)
         elif isinstance(result, TokenRateLimitExceeded):
             raise HTTPException(
                 status_code=429,
@@ -222,6 +273,12 @@ async def query_topic(req: QueryRequest, request: Request) -> QueryResponse:
                     "retry_at_utc": result.retry_at_utc,
                 },
             ) from result
+        elif isinstance(result, ModelUnavailable):
+            if _is_vision_failure(result, bool(req.image)):
+                explanations[level] = f"Vision unavailable: {result}"
+            else:
+                explanations[level] = f"Error generating {level}: {result}"
+            logger.error("query_model_unavailable", level=level, error=str(result))
         else:
             error_msg = str(result) if result else "Unknown error"
             explanations[level] = f"Error generating {level}: {error_msg}"
@@ -270,7 +327,9 @@ async def query_topic_stream(req: QueryRequest, request: Request):
         raise HTTPException(400, str(e)) from e
 
     level = req.levels[0] if req.levels and req.levels[0] in ALL_LEVELS else "eli5"
-    cache_key = _cache_key(topic, level, req.mode, req.image)
+    ctx = _context_payload(req)
+    ctx_kwargs = {"context": ctx} if ctx else {}
+    cache_key = _cache_key(topic, level, req.mode, req.image, context_suffix=_context_cache_suffix(ctx))
     if not req.regenerate:
         cached = await _cache_get(cache_key)
         if cached:
@@ -296,6 +355,7 @@ async def query_topic_stream(req: QueryRequest, request: Request):
             stream = generate_stream_explanation(
                 topic,
                 level,
+                **ctx_kwargs,
                 mode=req.mode,
                 is_pro=False,
                 temperature=req.temperature,
@@ -303,20 +363,23 @@ async def query_topic_stream(req: QueryRequest, request: Request):
                 client_ip=client_ip,
                 image_data=req.image,
             )
+            truncated = False
             async for chunk in _stream_chunks(stream):
+                if "__TRUNCATED__" in chunk:
+                    truncated = True
+                    chunk = chunk.replace("__TRUNCATED__", "")
+                    if chunk:
+                        full_content += chunk
+                        buffer += chunk
+                    if buffer:
+                        yield f"data: {json.dumps({'chunk': buffer})}\n\n"
+                        buffer = ""
+                    yield f"data: {json.dumps({'warning': 'Response may be incomplete due to length limits. Try regenerating.'})}\n\n"
+                    break
+
                 full_content += chunk
                 chunk_count += 1
                 avg_chunk_size = (avg_chunk_size * (chunk_count - 1) + len(chunk)) / chunk_count
-
-                if "__TRUNCATED__" in chunk:
-                    chunk = chunk.replace("__TRUNCATED__", "")
-                    if chunk:
-                        buffer += chunk
-                        if buffer:
-                            yield f"data: {json.dumps({'chunk': buffer})}\n\n"
-                            buffer = ""
-                    yield f"data: {json.dumps({'warning': 'Response may be incomplete due to length limits. Try regenerating.'})}\n\n"
-                    break
 
                 buffer += chunk
                 token_count += len(chunk.split())
@@ -346,7 +409,7 @@ async def query_topic_stream(req: QueryRequest, request: Request):
             if buffer:
                 yield f"data: {json.dumps({'chunk': buffer})}\n\n"
 
-            if full_content and not req.regenerate:
+            if full_content and not truncated and not req.regenerate:
                 await _cache_set(cache_key, full_content)
             yield "data: [DONE]\n\n"
 
@@ -358,3 +421,71 @@ async def query_topic_stream(req: QueryRequest, request: Request):
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+class FollowUpTurn(BaseModel):
+    question: str = Field(..., min_length=1, max_length=500)
+    answer: str = Field(..., max_length=4000)
+
+
+class FollowUpRequest(BaseModel):
+    topic: str = Field(..., min_length=1, max_length=2000)
+    question: str = Field(..., min_length=1, max_length=500)
+    level: str = Field(default="eli12")
+    selected_text: str | None = Field(default=None, max_length=2000)
+    surrounding_text: str | None = Field(default=None, max_length=2500)
+    page_title: str | None = Field(default=None, max_length=300)
+    page_url: str | None = Field(default=None, max_length=2048)
+    history: list[FollowUpTurn] = Field(default_factory=list, max_length=6)
+
+
+class FollowUpResponse(BaseModel):
+    topic: str
+    level: str
+    question: str
+    answer: str
+
+
+@router.post(
+    "/followup",
+    response_model=FollowUpResponse,
+    summary="Answer a Follow-up Question",
+    description="Answers a follow-up question about a topic, optionally grounded in page context and prior turns.",
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid topic or empty question"},
+        429: {"model": RateLimitResponse, "description": "Rate limit exceeded"},
+    },
+)
+async def followup(body: FollowUpRequest, request: Request) -> FollowUpResponse:
+    """Answer a follow-up question (no caching)."""
+    client_ip = _get_client_ip(request)
+    try:
+        topic = sanitize_topic(body.topic)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    level = body.level if body.level in ALL_LEVELS else "eli12"
+    question = sanitize_context_text(body.question, MAX_QUESTION_LENGTH)
+    if not question:
+        raise HTTPException(400, "Question required")
+    ctx = _context_payload(body)
+    history = [
+        {
+            "question": sanitize_context_text(t.question, MAX_QUESTION_LENGTH) or "",
+            "answer": sanitize_context_text(t.answer, 4000) or "",
+        }
+        for t in body.history
+    ]
+    logger.info("followup_start", topic=topic, level=level, turns=len(history))
+    try:
+        answer = await generate_followup(
+            topic, level, question, context=ctx, history=history,
+            client_ip=client_ip, temperature=0.7,
+        )
+    except TokenRateLimitExceeded as e:
+        raise HTTPException(429, detail={
+            "error": "Token rate limit exceeded",
+            "message": e.message,
+            "retry_after_seconds": e.retry_after_seconds,
+            "retry_at_utc": e.retry_at_utc,
+        }) from e
+    return FollowUpResponse(topic=topic, level=level, question=question, answer=answer)
