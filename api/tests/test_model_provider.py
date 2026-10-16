@@ -38,3 +38,19 @@ async def test_fallback_to_gemini_raises_when_unconfigured():
     provider.gemini_configured = False
     with pytest.raises(ModelUnavailable):
         await provider._fallback_to_gemini("prompt")
+
+
+@pytest.mark.asyncio
+async def test_openrouter_vision_primary(monkeypatch):
+    provider = ModelProvider()
+    provider.openrouter_configured = True
+    provider.gemini_configured = False
+
+    async def fake_openrouter_vision(prompt, image_data, **_kwargs):
+        return {"provider": "openrouter", "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", "content": "vision ok"}
+
+    monkeypatch.setattr(provider, "_call_openrouter_vision", fake_openrouter_vision)
+    result = await provider.route_inference("describe", image_data="data:image/png;base64,AAAA")
+    assert result["provider"] == "openrouter"
+    assert result["content"] == "vision ok"
+

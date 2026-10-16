@@ -31,6 +31,7 @@ def test_settings():
         environment="test",
         groq_api_key="",
         gemini_api_key="",
+        openrouter_api_key="",
         token_rate_limit_enabled=True,
         token_rate_limit_per_ip_hour=12000,
     )
