@@ -48,10 +48,10 @@ A fast, distraction-free reading interface for conceptual explanations across 4 
 ### Quickstart
 
 ```bash
-npm run local:start
+make          # or: make start / npm run local:start
 ```
 
-Starts the React frontend at `http://localhost:5173` and FastAPI backend at `http://localhost:8000` (requires `GROQ_API_KEY` for text and optional `OPENROUTER_API_KEY` for vision in `.env`).
+Starts the React frontend at `http://localhost:5173` and FastAPI backend at `http://localhost:8000` (requires `GROQ_API_KEY` for text and optional `OPENROUTER_API_KEY` for vision in `.env`). Use `make stop` to stop both servers, or `make check` to run lint, type-check, and tests.
 
 Or via Docker:
 
