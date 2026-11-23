@@ -49,3 +49,9 @@ async def test_keep_alive_returns_200_with_probe_payload(app_client):
     assert data["status"] == "alive"
     assert "probes" in data
     assert "upstash_redis" in data["probes"]
+
+
+@pytest.mark.asyncio
+async def test_unknown_route_returns_404(app_client):
+    resp = app_client.get("/does-not-exist")
+    assert resp.status_code == 404

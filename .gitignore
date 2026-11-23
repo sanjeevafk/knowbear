@@ -25,3 +25,4 @@ api/.pytest_cache
 .codex
 EXTENSION_PLAN.md
 knowbear-extension.zip
+*.log

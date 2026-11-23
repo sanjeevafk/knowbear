@@ -1,6 +1,6 @@
 import pytest
 
-from services.model_provider import ModelProvider, ModelUnavailable
+from services.model_provider import ModelProvider, ModelUnavailable, _StreamCotFilter
 
 
 @pytest.mark.asyncio
@@ -40,5 +40,18 @@ async def test_openrouter_vision_primary(monkeypatch):
     result = await provider.route_inference("describe", image_data="data:image/png;base64,AAAA")
     assert result["provider"] == "openrouter"
     assert result["content"] == "vision ok"
+
+
+def test_stream_cot_filter_strips_split_think_and_thought_blocks():
+    f = _StreamCotFilter()
+    chunks = [
+        "Hello <thi",
+        "nk>secret reasoning</thi",
+        "nk>world!\nThought: internal check\n",
+        "\nFinal answer.",
+        " My Thought: stays visible.",
+    ]
+    out = "".join(f.feed(c) for c in chunks) + f.flush()
+    assert out == "Hello world!\nFinal answer. My Thought: stays visible."
 
 

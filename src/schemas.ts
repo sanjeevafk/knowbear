@@ -1,21 +1,23 @@
-import { z } from 'zod'
+import * as z from 'zod/v4-mini'
 
-export const modeSchema = z.string().optional()
+export const modeSchema = z.optional(z.string())
 export const levelSchema = z.enum(['eli5', 'eli12', 'eli15', 'meme'])
 
 export const queryRequestSchema = z
     .object({
-        topic: z.string().max(2000).default(''),
-        image: z.string().optional(),
-        levels: z.array(levelSchema).optional(),
-        mode: modeSchema.optional(),
-        temperature: z.number().optional(),
-        regenerate: z.boolean().optional(),
+        topic: z._default(z.string().check(z.maxLength(2000)), ''),
+        image: z.optional(z.string()),
+        levels: z.optional(z.array(levelSchema)),
+        mode: modeSchema,
+        temperature: z.optional(z.number()),
+        regenerate: z.optional(z.boolean()),
     })
-    .refine((data) => data.topic.trim().length > 0 || !!data.image, {
-        message: 'Either a topic or an image must be provided',
-        path: ['topic'],
-    })
+    .check(
+        z.refine((data) => data.topic.trim().length > 0 || !!data.image, {
+            message: 'Either a topic or an image must be provided',
+            path: ['topic'],
+        })
+    )
 
 export const pinnedTopicSchema = z.object({
     id: z.string(),
@@ -27,12 +29,12 @@ export const pinnedTopicsSchema = z.array(pinnedTopicSchema)
 
 export const queryResponseSchema = z.object({
     topic: z.string(),
-    explanations: z.record(z.string()),
-    mode: modeSchema.optional(),
+    explanations: z.record(z.string(), z.string()),
+    mode: modeSchema,
 })
 
 export const streamChunkSchema = z.object({
-    chunk: z.string().optional(),
-    warning: z.string().optional(),
-    error: z.string().optional(),
+    chunk: z.optional(z.string()),
+    warning: z.optional(z.string()),
+    error: z.optional(z.string()),
 })

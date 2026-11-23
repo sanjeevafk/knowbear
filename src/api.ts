@@ -1,5 +1,4 @@
 import type { PinnedTopic, QueryRequest, QueryResponse, StreamStatus } from './types'
-import { ZodError } from 'zod'
 import {
     pinnedTopicsSchema,
     queryRequestSchema,
@@ -37,7 +36,25 @@ async function getRequestIdFromErrorBody(res: Response): Promise<string | null> 
     }
 }
 
-async function fetchAPI<T>(path: string, options?: RequestInit & { responseType?: 'json' | 'blob'; timeoutMs?: number }): Promise<T> {
+async function throwResponseError(res: Response): Promise<never> {
+    if (res.status === 429) {
+        let detail = 'Too many requests. Please try again later.'
+        try {
+            const body = await res.json()
+            const message = body?.detail?.message || body?.detail
+            if (typeof message === 'string') detail = message
+            const bodyRequestId = typeof body?.request_id === 'string' ? body.request_id : null
+            detail = appendRequestId(detail, bodyRequestId || getRequestIdFromResponse(res))
+        } catch {
+            detail = appendRequestId(detail, getRequestIdFromResponse(res))
+        }
+        throw new Error(detail)
+    }
+    const requestId = getRequestIdFromResponse(res) || (await getRequestIdFromErrorBody(res))
+    throw new Error(appendRequestId(`API error: ${res.status}`, requestId))
+}
+
+async function fetchAPI<T>(path: string, options?: RequestInit & { timeoutMs?: number }): Promise<T> {
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
         ...options?.headers,
@@ -55,29 +72,10 @@ async function fetchAPI<T>(path: string, options?: RequestInit & { responseType?
         })
         clearTimeout(timeoutId)
 
-        if (res.status === 429) {
-            let detail = 'Too many requests. Please try again later.'
-            try {
-                const body = await res.json()
-                const message = body?.detail?.message || body?.detail
-                if (typeof message === 'string') detail = message
-                const bodyRequestId = typeof body?.request_id === 'string' ? body.request_id : null
-                detail = appendRequestId(detail, bodyRequestId || getRequestIdFromResponse(res))
-            } catch {
-                // ignore parse error and keep default message
-                detail = appendRequestId(detail, getRequestIdFromResponse(res))
-            }
-            throw new Error(detail)
-        }
-
         if (!res.ok) {
-            const requestId = getRequestIdFromResponse(res) || await getRequestIdFromErrorBody(res)
-            throw new Error(appendRequestId(`API error: ${res.status}`, requestId))
+            await throwResponseError(res)
         }
 
-        if (options?.responseType === 'blob') {
-            return await res.blob() as unknown as T
-        }
         return await res.json()
     } catch (err: unknown) {
         clearTimeout(timeoutId)
@@ -88,8 +86,8 @@ async function fetchAPI<T>(path: string, options?: RequestInit & { responseType?
     }
 }
 
-function formatValidationError(prefix: string, err: ZodError): Error {
-    const details = err.issues.map((issue) => `${issue.path.join('.') || 'root'}: ${issue.message}`).join('; ')
+function formatValidationError(prefix: string, err: { issues: ReadonlyArray<{ path: PropertyKey[]; message: string }> }): Error {
+    const details = err.issues.map((issue) => `${issue.path.map(String).join('.') || 'root'}: ${issue.message}`).join('; ')
     return new Error(`${prefix} (${details})`)
 }
 
@@ -195,24 +193,8 @@ export async function queryTopicStream(
             clearTimeout(timeoutId)
             if (signal) signal.removeEventListener('abort', onAbort)
 
-            if (response.status === 429) {
-                let detail = 'Too many requests. Please try again later.'
-                try {
-                    const body = await response.json()
-                    const message = body?.detail?.message || body?.detail
-                    if (typeof message === 'string') detail = message
-                    const bodyRequestId = typeof body?.request_id === 'string' ? body.request_id : null
-                    detail = appendRequestId(detail, bodyRequestId || getRequestIdFromResponse(response))
-                } catch {
-                    // ignore
-                    detail = appendRequestId(detail, getRequestIdFromResponse(response))
-                }
-                throw new Error(detail)
-            }
-
             if (!response.ok) {
-                const requestId = getRequestIdFromResponse(response) || await getRequestIdFromErrorBody(response)
-                throw new Error(appendRequestId(`API error: ${response.status}`, requestId))
+                await throwResponseError(response)
             }
 
             const contentType = response.headers.get('content-type')
@@ -281,12 +263,7 @@ export async function queryTopicStream(
             }
 
             if (err instanceof Error && err.message === 'Stream read timed out') {
-                try {
-                    onStatus?.('degraded')
-                    return await fallbackToNonStream(err.message)
-                } catch {
-                    // continue to retry/error flow
-                }
+                onStatus?.('degraded')
             }
 
             await fallbackToNonStream(err instanceof Error ? err.message : 'Stream failed')

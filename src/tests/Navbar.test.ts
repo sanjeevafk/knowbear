@@ -1,15 +1,14 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { BrowserRouter } from 'react-router-dom'
-import Navbar from '../components/Navbar'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { screen, fireEvent } from '@testing-library/dom'
+import { createNavbar } from '../components/Navbar'
 
 describe('Navbar', () => {
+    beforeEach(() => {
+        document.body.innerHTML = ''
+    })
+
     it('renders logo, brand name, and GitHub link', () => {
-        render(
-            <BrowserRouter>
-                <Navbar />
-            </BrowserRouter>
-        )
+        document.body.appendChild(createNavbar())
 
         expect(screen.getByText('Know')).toBeInTheDocument()
         expect(screen.getByText('Bear')).toBeInTheDocument()
@@ -22,11 +21,7 @@ describe('Navbar', () => {
 
     it('triggers onNewSearch when logo is clicked', () => {
         const onNewSearch = vi.fn()
-        render(
-            <BrowserRouter>
-                <Navbar onNewSearch={onNewSearch} />
-            </BrowserRouter>
-        )
+        document.body.appendChild(createNavbar({ onNewSearch }))
 
         const logoLink = screen.getByRole('link', { name: /know bear/i })
         fireEvent.click(logoLink)

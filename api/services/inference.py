@@ -1,8 +1,8 @@
 """Inference service."""
 
+import asyncio
 import random
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from prompts import FAST_MODEL, PROMPTS, build_explanation_prompt, build_followup_prompt
 from logging_config import logger
 
@@ -26,27 +26,26 @@ def get_regeneration_quote() -> str:
     return f"---\n*\"{quote['content']}\"* — {quote['author']}"
 
 
-@retry(
-    stop=stop_after_attempt(2),
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    retry=retry_if_exception_type((httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError)),
-    reraise=True
-)
-async def call_model(model: str, prompt: str, max_tokens: int = 1024, **kwargs) -> str:
-    """Call API with given model and prompt."""
+async def call_model(model: str, prompt: str, **kwargs) -> str:
+    """Call API with given model and prompt, retrying transient network errors once."""
     from services.model_provider import ModelProvider
 
     provider = ModelProvider.get_instance()
-    try:
-        result = await provider.route_inference(
-            prompt=prompt,
-            model=model,
-            **kwargs
-        )
-        return result["content"]
-    except Exception as e:
-        logger.error("inference_failed", error=str(e), model=model)
-        raise e
+    last_exc: Exception | None = None
+    for attempt in range(2):
+        try:
+            result = await provider.route_inference(prompt=prompt, model=model, **kwargs)
+            return result["content"]
+        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+            last_exc = e
+            if attempt == 0:
+                await asyncio.sleep(2)
+        except Exception as e:
+            logger.error("inference_failed", error=str(e), model=model)
+            raise
+    logger.error("inference_failed", error=str(last_exc), model=model)
+    assert last_exc is not None
+    raise last_exc
 
 
 async def generate_explanation(

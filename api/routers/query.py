@@ -109,10 +109,6 @@ class QueryResponse(BaseModel):
     )
 
 
-def _normalize_mode(mode: str | None) -> str:
-    return "standard"
-
-
 def _normalize_levels(levels: list[str]) -> list[str]:
     seen: set[str] = set()
     normalized: list[str] = []
@@ -138,7 +134,6 @@ def _get_client_ip(request: Request) -> str:
 def _cache_key(
     topic: str,
     level: str,
-    mode: str | None = None,
     image: str | None = None,
     context_suffix: str = "",
 ) -> str:
@@ -221,7 +216,6 @@ async def _stream_chunks(stream: AsyncIterator[str] | Iterator[str]):
 )
 async def query_topic(req: QueryRequest, request: Request) -> QueryResponse:
     """Generate explanations for a topic."""
-    req.mode = _normalize_mode(req.mode)
     client_ip = _get_client_ip(request)
 
     try:
@@ -244,17 +238,24 @@ async def query_topic(req: QueryRequest, request: Request) -> QueryResponse:
     ctx = _context_payload(req)
     ctx_kwargs = {"context": ctx} if ctx else {}
     suffix = _context_cache_suffix(ctx)
-    logger.info("query_start_generation", topic=topic, levels=levels, mode=req.mode, has_context=bool(ctx))
+    logger.info("query_start_generation", topic=topic, levels=levels, has_context=bool(ctx))
     tasks: dict[str, asyncio.Task[str]] = {}
     for level in levels:
-        key = _cache_key(topic, level, req.mode, req.image, context_suffix=suffix)
+        key = _cache_key(topic, level, req.image, context_suffix=suffix)
         if not req.regenerate:
             cached = await _cache_get(key)
             if cached:
                 explanations[level] = cached
                 continue
         tasks[level] = asyncio.create_task(
-            generate_explanation(topic, level, client_ip=client_ip, image_data=req.image, **ctx_kwargs)
+            generate_explanation(
+                topic,
+                level,
+                client_ip=client_ip,
+                image_data=req.image,
+                temperature=req.temperature,
+                **ctx_kwargs,
+            )
         )
 
     results = await asyncio.gather(*tasks.values(), return_exceptions=True) if tasks else []
@@ -262,7 +263,7 @@ async def query_topic(req: QueryRequest, request: Request) -> QueryResponse:
         if isinstance(result, str):
             explanations[level] = result
             if not req.regenerate:
-                await _cache_set(_cache_key(topic, level, req.mode, req.image, context_suffix=suffix), result)
+                await _cache_set(_cache_key(topic, level, req.image, context_suffix=suffix), result)
         elif isinstance(result, TokenRateLimitExceeded):
             raise HTTPException(
                 status_code=429,
@@ -313,7 +314,6 @@ async def query_topic(req: QueryRequest, request: Request) -> QueryResponse:
 )
 async def query_topic_stream(req: QueryRequest, request: Request):
     """Stream explanations for a topic."""
-    req.mode = _normalize_mode(req.mode)
     client_ip = _get_client_ip(request)
 
     try:
@@ -329,7 +329,7 @@ async def query_topic_stream(req: QueryRequest, request: Request):
     level = req.levels[0] if req.levels and req.levels[0] in ALL_LEVELS else "eli5"
     ctx = _context_payload(req)
     ctx_kwargs = {"context": ctx} if ctx else {}
-    cache_key = _cache_key(topic, level, req.mode, req.image, context_suffix=_context_cache_suffix(ctx))
+    cache_key = _cache_key(topic, level, req.image, context_suffix=_context_cache_suffix(ctx))
     if not req.regenerate:
         cached = await _cache_get(cache_key)
         if cached:
@@ -356,8 +356,6 @@ async def query_topic_stream(req: QueryRequest, request: Request):
                 topic,
                 level,
                 **ctx_kwargs,
-                mode=req.mode,
-                is_pro=False,
                 temperature=req.temperature,
                 regenerate=req.regenerate,
                 client_ip=client_ip,

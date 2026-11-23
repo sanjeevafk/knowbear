@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import PinnedTopics from '../components/PinnedTopics'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { screen, fireEvent } from '@testing-library/dom'
+import { createPinnedTopics } from '../components/PinnedTopics'
 import type { PinnedTopic } from '../types'
 
 describe('PinnedTopics', () => {
@@ -10,9 +10,12 @@ describe('PinnedTopics', () => {
         { id: 'inflation', title: 'How Inflation Works', description: 'Money supply and purchasing power.' },
     ]
 
+    beforeEach(() => {
+        document.body.innerHTML = ''
+    })
+
     it('renders topic cards with index indicators and descriptions', () => {
-        const onSelect = vi.fn()
-        render(<PinnedTopics topics={mockTopics} onSelect={onSelect} />)
+        document.body.appendChild(createPinnedTopics({ topics: mockTopics, onSelect: () => {} }))
 
         expect(screen.getByText('Popular Topics')).toBeInTheDocument()
         expect(screen.getByText('01')).toBeInTheDocument()
@@ -26,7 +29,7 @@ describe('PinnedTopics', () => {
 
     it('triggers onSelect with topic title when a card is clicked', () => {
         const onSelect = vi.fn()
-        render(<PinnedTopics topics={mockTopics} onSelect={onSelect} />)
+        document.body.appendChild(createPinnedTopics({ topics: mockTopics, onSelect }))
 
         fireEvent.click(screen.getByText('How Black Holes Work'))
         expect(onSelect).toHaveBeenCalledWith('How Black Holes Work')

@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { createStore } from 'zustand/vanilla'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { QueryResponse, Level, PinnedTopic, StreamStatus } from '../types'
 import { getPinnedTopics, queryTopicStream } from '../api'
@@ -18,19 +18,11 @@ interface KnowBearState {
     abortController: AbortController | null
     pinnedTopics: PinnedTopic[]
     pinnedTopicsLoaded: boolean
-    streamStatus: StreamStatus
+    streamStatusByLevel: Partial<Record<Level, StreamStatus>>
     lastFailedRequest: { topic: string; level: Level } | null
 
-    setLoading: (loading: boolean) => void
     setResult: (result: QueryResponse | null) => void
     setSelectedLevel: (level: Level) => void
-    setError: (error: string | null) => void
-    setFetchingLevels: (levels: Set<Level>) => void
-    setFailedLevels: (levels: Set<Level>) => void
-    setActiveTopic: (topic: string) => void
-    setActiveImage: (image: string | null) => void
-    setLoadingMeta: (meta: { level: Level; topic: string } | null) => void
-    setStreamStatus: (status: StreamStatus) => void
     fetchPinnedTopics: () => Promise<void>
     retryLastFailed: () => Promise<void>
 
@@ -53,25 +45,17 @@ const initialState = {
     abortController: null,
     pinnedTopics: [],
     pinnedTopicsLoaded: false,
-    streamStatus: 'idle' as StreamStatus,
+    streamStatusByLevel: {} as Partial<Record<Level, StreamStatus>>,
     lastFailedRequest: null,
 }
 
-export const useKnowBearStore = create<KnowBearState>()(
+export const useKnowBearStore = createStore<KnowBearState>()(
     persist(
         (set, get) => ({
             ...initialState,
 
-            setLoading: (loading) => set({ loading }),
             setResult: (result) => set({ result }),
             setSelectedLevel: (selectedLevel) => set({ selectedLevel }),
-            setError: (error) => set({ error }),
-            setFetchingLevels: (fetchingLevels) => set({ fetchingLevels }),
-            setFailedLevels: (failedLevels) => set({ failedLevels }),
-            setActiveTopic: (activeTopic) => set({ activeTopic }),
-            setActiveImage: (activeImage) => set({ activeImage }),
-            setLoadingMeta: (loadingMeta) => set({ loadingMeta }),
-            setStreamStatus: (streamStatus) => set({ streamStatus }),
 
             abortCurrentStream: () => {
                 const { abortController } = get()
@@ -102,7 +86,9 @@ export const useKnowBearStore = create<KnowBearState>()(
 
                 try {
                     let streamedText = ''
-                    set({ streamStatus: 'idle' })
+                    set((s) => ({
+                        streamStatusByLevel: { ...s.streamStatusByLevel, [level]: 'idle' },
+                    }))
 
                     await queryTopicStream(
                         {
@@ -135,34 +121,39 @@ export const useKnowBearStore = create<KnowBearState>()(
                             const failed = new Set(get().failedLevels)
                             failed.add(level)
                             const message = error instanceof Error ? error.message : 'Request failed'
-                            set({
+                            set((s) => ({
                                 failedLevels: failed,
                                 error: message,
-                                streamStatus: 'degraded',
+                                streamStatusByLevel: { ...s.streamStatusByLevel, [level]: 'degraded' },
                                 lastFailedRequest: { topic, level },
-                            })
+                            }))
                         },
                         controller.signal,
                         (status) => {
-                            set({ streamStatus: status })
+                            set((s) => ({
+                                streamStatusByLevel: { ...s.streamStatusByLevel, [level]: status },
+                            }))
                         }
                     )
                 } catch (err: unknown) {
                     if (!(err instanceof Error) || err.name !== 'AbortError') {
                         const failed = new Set(get().failedLevels)
                         failed.add(level)
-                        set({
+                        set((s) => ({
                             failedLevels: failed,
                             error: err instanceof Error ? err.message : 'Request failed',
-                            streamStatus: 'degraded',
+                            streamStatusByLevel: { ...s.streamStatusByLevel, [level]: 'degraded' },
                             lastFailedRequest: { topic, level },
-                        })
+                        }))
                     }
                 } finally {
                     const remaining = new Set(get().fetchingLevels)
                     remaining.delete(level)
-                    if (remaining.size === 0 && get().streamStatus === 'live') {
-                        set({ fetchingLevels: remaining, streamStatus: 'idle' })
+                    if (get().streamStatusByLevel[level] === 'live') {
+                        set((s) => ({
+                            fetchingLevels: remaining,
+                            streamStatusByLevel: { ...s.streamStatusByLevel, [level]: 'idle' },
+                        }))
                     } else {
                         set({ fetchingLevels: remaining })
                     }
@@ -191,7 +182,6 @@ export const useKnowBearStore = create<KnowBearState>()(
                     loadingMeta: { level: activeLevel, topic: effectiveTopic },
                     loading: true,
                     error: null,
-                    streamStatus: 'idle',
                 })
 
                 if (forceRefresh) {

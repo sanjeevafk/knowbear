@@ -6,13 +6,12 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from uuid import uuid4
 
-import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config import get_settings
-from logging_config import logger, setup_logging
+from logging_config import bind_contextvars, clear_contextvars, logger, setup_logging
 from routers import pinned, query
 from services.model_provider import ModelError, ModelProvider, ModelUnavailable
 from services.upstash_redis import close_upstash_redis_client, get_upstash_redis_client
@@ -62,7 +61,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in allowed_origins],
     allow_origin_regex=r"^(chrome-extension|moz-extension)://[^/]+$",
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS", "DELETE"],
     allow_headers=["content-type", "x-request-id"],
     max_age=3600,
@@ -102,8 +101,8 @@ async def structlog_middleware(request: Request, call_next):
     request_id = request.headers.get("x-request-id") or str(uuid4())
     request.state.request_id = request_id
 
-    structlog.contextvars.clear_contextvars()
-    structlog.contextvars.bind_contextvars(
+    clear_contextvars()
+    bind_contextvars(
         path=request.url.path,
         method=request.method,
         client_ip=request.client.host if request.client else None,
@@ -113,7 +112,7 @@ async def structlog_middleware(request: Request, call_next):
     try:
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
-        structlog.contextvars.bind_contextvars(status_code=response.status_code)
+        bind_contextvars(status_code=response.status_code)
         if response.status_code >= 400:
             logger.warning("http_request_failed")
         else:
@@ -228,4 +227,7 @@ async def keep_alive():
 
 @app.get("/{path:path}")
 async def catch_all(path: str):
-    return {"message": f"Catch-all route hit: /{path}", "status": "Backend is running!"}
+    return JSONResponse(
+        status_code=404,
+        content={"error": "Not Found", "detail": f"Route /{path} not found"},
+    )

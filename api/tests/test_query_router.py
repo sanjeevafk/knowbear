@@ -146,7 +146,7 @@ async def test_query_uses_response_cache(app_client, monkeypatch):
 async def test_query_with_image_input(app_client, monkeypatch):
     received = {}
 
-    async def fake_generate_explanation(topic, level, mode=None, client_ip="unknown", image_data=None):
+    async def fake_generate_explanation(topic, level, mode=None, client_ip="unknown", image_data=None, **_kwargs):
         received["topic"] = topic
         received["image_data"] = image_data
         return "diagram explanation"
@@ -167,7 +167,7 @@ async def test_query_with_image_input(app_client, monkeypatch):
 async def test_query_empty_topic_with_image_defaults_topic(app_client, monkeypatch):
     received = {}
 
-    async def fake_generate_explanation(topic, level, mode=None, client_ip="unknown", image_data=None):
+    async def fake_generate_explanation(topic, level, mode=None, client_ip="unknown", image_data=None, **_kwargs):
         received["topic"] = topic
         return "explained"
 

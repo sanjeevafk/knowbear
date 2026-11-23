@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
 import { useKnowBearStore } from './useKnowBearStore'
 import { queryTopicStream } from '../api'
 
@@ -22,58 +21,39 @@ vi.mock('../api', () => ({
 
 describe('useKnowBearStore', () => {
     beforeEach(() => {
-        const { result } = renderHook(() => useKnowBearStore())
-        act(() => {
-            result.current.reset()
-        })
+        useKnowBearStore.getState().reset()
         vi.clearAllMocks()
     })
 
     it('has expected initial state', () => {
-        const { result } = renderHook(() => useKnowBearStore())
-        expect(result.current.loading).toBe(false)
-        expect(result.current.result).toBeNull()
-        expect(result.current.selectedLevel).toBe('eli5')
+        const state = useKnowBearStore.getState()
+        expect(state.loading).toBe(false)
+        expect(state.result).toBeNull()
+        expect(state.selectedLevel).toBe('eli5')
     })
 
     it('loads fresh result in startSearch', async () => {
-        const { result } = renderHook(() => useKnowBearStore())
-        await act(async () => {
-            await result.current.startSearch('blockchain')
-        })
-
-        await waitFor(() => {
-            expect(result.current.result?.explanations.eli5).toBe('blockchain content')
-        })
+        await useKnowBearStore.getState().startSearch('blockchain')
+        expect(useKnowBearStore.getState().result?.explanations.eli5).toBe('blockchain content')
     })
 
     it('aborts an active stream when a new search starts', async () => {
         const streamMock = vi.mocked(queryTopicStream)
-        const { result } = renderHook(() => useKnowBearStore())
+        const firstSearch = useKnowBearStore.getState().startSearch('first topic')
+        await useKnowBearStore.getState().startSearch('second topic')
+        await firstSearch
 
-        await act(async () => {
-            const firstSearch = result.current.startSearch('first topic')
-            await result.current.startSearch('second topic')
-            await firstSearch
-        })
-
-        await waitFor(() => {
-            expect(result.current.activeTopic).toBe('second topic')
-            expect(result.current.result?.topic).toBe('second topic')
-            expect(result.current.result?.explanations.eli5).toBe('second topic content')
-        })
-
+        const state = useKnowBearStore.getState()
+        expect(state.activeTopic).toBe('second topic')
+        expect(state.result?.topic).toBe('second topic')
+        expect(state.result?.explanations.eli5).toBe('second topic content')
         expect(streamMock).toHaveBeenCalledTimes(2)
     })
 
     it('passes regenerate flag and temperature for level regeneration', async () => {
         const streamMock = vi.mocked(queryTopicStream)
-        const { result } = renderHook(() => useKnowBearStore())
-
-        await act(async () => {
-            await result.current.startSearch('thermodynamics')
-            await result.current.fetchLevel('thermodynamics', 'eli5', { regenerate: true, temperature: 1.03 })
-        })
+        await useKnowBearStore.getState().startSearch('thermodynamics')
+        await useKnowBearStore.getState().fetchLevel('thermodynamics', 'eli5', { regenerate: true, temperature: 1.03 })
 
         const regenerateCall = streamMock.mock.calls[1]
         expect(regenerateCall?.[0]).toMatchObject({
@@ -86,17 +66,13 @@ describe('useKnowBearStore', () => {
 
     it('handles image input and propagates image to queryTopicStream', async () => {
         const streamMock = vi.mocked(queryTopicStream)
-        const { result } = renderHook(() => useKnowBearStore())
         const dummyImage = 'data:image/png;base64,sample'
 
-        await act(async () => {
-            await result.current.startSearch('', false, undefined, dummyImage)
-        })
+        await useKnowBearStore.getState().startSearch('', false, undefined, dummyImage)
 
-        await waitFor(() => {
-            expect(result.current.activeImage).toBe(dummyImage)
-            expect(result.current.activeTopic).toBe('Explain this image or diagram')
-        })
+        const state = useKnowBearStore.getState()
+        expect(state.activeImage).toBe(dummyImage)
+        expect(state.activeTopic).toBe('Explain this image or diagram')
 
         const firstCall = streamMock.mock.calls[0]
         expect(firstCall?.[0]).toMatchObject({

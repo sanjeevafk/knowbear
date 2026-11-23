@@ -1,12 +1,30 @@
 import os
 import sys
 from functools import lru_cache
-from dotenv import load_dotenv
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
+def _load_dotenv(path: Path, override: bool = False) -> None:
+    """Minimal .env parser using Python stdlib."""
+    if not path.is_file():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if key.startswith("export "):
+            key = key[7:].strip()
+        value = value.strip().strip("'\"")
+        if key and (override or key not in os.environ):
+            os.environ[key] = value
+
+
 # Load project .env with override=True so .env takes precedence over shell env
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"), override=True)
-load_dotenv(".env", override=True)
+_load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
+_load_dotenv(Path(".env"), override=True)
 
 
 class Settings(BaseSettings):

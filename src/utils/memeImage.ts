@@ -3,6 +3,7 @@
  * Produces crisp 2x retina images (1200x1040) compatible with mobile galleries,
  * WhatsApp, Discord, Twitter/X, Slack, and the native mobile share sheet.
  */
+import '../../extension/lib/meme.js'
 
 function wrapText(
     ctx: CanvasRenderingContext2D,
@@ -259,72 +260,10 @@ export interface ParsedMeme {
     cleanText: string
 }
 
-function sanitizeMemeText(raw: string): string {
-    return raw
-        .replace(/\n*---\s*\n\s*\*["'][^"']+["']\*\s*—\s*.*$/s, '')
-        .replace(/\n*---\s*$/s, '')
-        .replace(/<think>[\s\S]*?<\/think>/gi, '')
-        .replace(/^Thought:[\s\S]*?\n\n/gi, '')
-        .replace(/TEMPLATE:\s*\w+\s*\n*/gi, '')
-        .replace(/\n*\bPUNCHLINE:?\s*$/i, '')
-        .trim()
-}
-
 export function parseMemeContent(rawContent: string, fallbackTopic = 'The Concept'): ParsedMeme {
-    const text = sanitizeMemeText(rawContent)
-
-    if (text.startsWith('{') && text.endsWith('}')) {
-        try {
-            const parsed = JSON.parse(text)
-            const setup = sanitizeMemeText(parsed.setup || fallbackTopic)
-            const punchline = sanitizeMemeText(parsed.punchline || text)
-            return {
-                setup,
-                punchline,
-                cleanText: punchline || text,
-            }
-        } catch {
-            // Ignore JSON parse failure
-        }
+    const kb = (globalThis as { KB?: { parseMemeContent: (raw: string, fallback?: string) => ParsedMeme } }).KB
+    if (!kb?.parseMemeContent) {
+        throw new Error('Shared meme parser (extension/lib/meme.js) not loaded')
     }
-
-    let setup = ''
-    let punchline = ''
-
-    const setupMatch = text.match(/SETUP:\s*([\s\S]*?)(?=PUNCHLINE:?|$)/i)
-    if (setupMatch) {
-        setup = setupMatch[1].trim()
-    }
-
-    const punchlineMatch = text.match(/PUNCHLINE:\s*([\s\S]*?)$/i)
-    if (punchlineMatch) {
-        punchline = punchlineMatch[1].trim()
-    }
-
-    if (!punchline) {
-        setup = fallbackTopic
-        punchline = (setupMatch ? setupMatch[1] : text)
-            .replace(/^SETUP:\s*/i, '')
-            .replace(/\bPUNCHLINE:?\s*$/i, '')
-            .trim()
-            .replace(/^["']|["']$/g, '')
-    }
-
-    setup = sanitizeMemeText(setup || fallbackTopic)
-    punchline = sanitizeMemeText(punchline)
-
-    let cleanText = text
-    if (setupMatch || punchlineMatch) {
-        const cleanSetup = setup.replace(/^KnowBear(\s+asks)?:?\s*/i, '').trim()
-        const cleanPunchline = punchline.replace(/^KnowBear(\s+says)?:?\s*/i, '').trim()
-        if (cleanSetup && cleanSetup !== fallbackTopic) {
-            cleanText = `${cleanSetup} ${cleanPunchline}`
-        } else {
-            cleanText = cleanPunchline
-        }
-    }
-
-    cleanText = cleanText.replace(/^["']|["']$/g, '').trim()
-
-    return { setup, punchline, cleanText }
+    return kb.parseMemeContent(rawContent, fallbackTopic)
 }
